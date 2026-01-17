@@ -27,8 +27,8 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      inkscape:zoom="5.6568542"
-     inkscape:cx="-5.0381358"
-     inkscape:cy="17.412505"
+     inkscape:cx="75.572038"
+     inkscape:cy="43.575456"
      inkscape:window-width="1920"
      inkscape:window-height="1174"
      inkscape:window-x="-11"
@@ -54,11 +54,18 @@
          x="87.058739"
          y="143.05855" /></text>
     <circle
-       style="fill:#f2c30d;fill-opacity:1;stroke:none;stroke-width:0.411404;stroke-dasharray:none;stroke-opacity:1"
+       style="fill:#0043d7;fill-opacity:1;stroke:none;stroke-width:0.411404;stroke-dasharray:none;stroke-opacity:1"
        id="path2"
        cx="100.89134"
        cy="126.70197"
        r="7.7474813" />
+    <ellipse
+       style="fill:#2ca02c;fill-opacity:1;stroke:none;stroke-width:0.108025;stroke-dasharray:none;stroke-opacity:1"
+       id="path2-8"
+       cx="104.2549"
+       cy="125.34249"
+       rx="2.0031586"
+       ry="2.0659325" />
   </g>
   <g
      inkscape:groupmode="layer"
@@ -67,13 +74,13 @@
      transform="translate(-86.551907,-118.95449)">
     <text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:900;font-stretch:normal;font-size:32.0459px;font-family:'Source Serif 4';-inkscape-font-specification:'Source Serif 4 Heavy';text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#2ba979;fill-opacity:1;stroke:none;stroke-width:0.35;stroke-dasharray:none;stroke-opacity:1"
+       style="font-style:normal;font-variant:normal;font-weight:900;font-stretch:normal;font-size:32.0459px;font-family:'Source Serif 4';-inkscape-font-specification:'Source Serif 4 Heavy';text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#00bd75;fill-opacity:1;stroke:none;stroke-width:0.35;stroke-dasharray:none;stroke-opacity:1"
        x="85.334221"
        y="140.7065"
        id="text8"><tspan
          sodipodi:role="line"
          id="tspan8"
-         style="font-style:normal;font-variant:normal;font-weight:900;font-stretch:normal;font-family:'Source Serif 4';-inkscape-font-specification:'Source Serif 4 Heavy';fill:#2ba979;fill-opacity:1;stroke:none;stroke-width:0.35;stroke-dasharray:none;stroke-opacity:1"
+         style="font-style:normal;font-variant:normal;font-weight:900;font-stretch:normal;font-family:'Source Serif 4';-inkscape-font-specification:'Source Serif 4 Heavy';fill:#00bd75;fill-opacity:1;stroke:none;stroke-width:0.35;stroke-dasharray:none;stroke-opacity:1"
          x="85.334221"
          y="140.7065">S</tspan></text>
   </g>

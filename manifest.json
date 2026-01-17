@@ -16,7 +16,7 @@
         "<all_urls>"
       ],
       "js": [
-        "content.js"
+        "toast.js"
       ],
       "run_at": "document_idle"
     }

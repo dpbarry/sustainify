@@ -24,7 +24,7 @@
         [data-theme="dark"] {
             --bg: hsl(155 25% 10%);
             --card: hsl(155 20% 14%);
-            --border: hsl(155 15% 25%);
+            --border: hsl(155 15% 50%);
             --accent: hsl(155 50% 55%);
             --accent-moderate: hsl(155 30% 35%);
             --accent-soft: hsl(155 40% 40%);
@@ -60,6 +60,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 0.75rem;
             padding-bottom: 0.75rem;
             border-bottom: 1.5px solid var(--border);
         }
@@ -70,7 +71,9 @@
             letter-spacing: 0.01em;
             color: var(--accent);
             line-height: 28px;
+            flex-shrink: 0;
         }
+
 
         .icon-btn {
             display: grid;
@@ -83,6 +86,7 @@
             color: var(--accent);
             cursor: pointer;
             transition: background 0.2s, border-color 0.2s;
+            flex-shrink: 0;
         }
 
         .icon-btn:hover {
@@ -271,7 +275,7 @@
         </header>
         <div class="settings">
             <div class="setting">
-                <label>Country of Origin</label>
+                <label>Transportation Emissions</label>
                 <div class="slider-row">
                     <span>less</span>
                     <div class="track">
@@ -283,7 +287,7 @@
                 </div>
             </div>
             <div class="setting">
-                <label>Sustainable Materials</label>
+                <label>Labor & Social</label>
                 <div class="slider-row">
                     <span>less</span>
                     <div class="track">
@@ -295,7 +299,7 @@
                 </div>
             </div>
             <div class="setting">
-                <label>Animal Welfare</label>
+                <label>Production & Materials</label>
                 <div class="slider-row">
                     <span>less</span>
                     <div class="track">
@@ -307,7 +311,7 @@
                 </div>
             </div>
             <div class="setting">
-                <label>Fair Labor</label>
+                <label>Health & Safety</label>
                 <div class="slider-row">
                     <span>less</span>
                     <div class="track">
@@ -318,6 +322,7 @@
                     <span>more</span>
                 </div>
             </div>
+
         </div>
     </main>
     <script src="popup.js"></script>
