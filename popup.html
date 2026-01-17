@@ -1,0 +1,260 @@
+<html>
+
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Nunito:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --bg: hsl(100, 40%, 96%);
+        --border: hsl(100, 30%, 60%);
+        --accent: hsl(100, 30%, 25%);
+        --text-light: hsl(100, 20%, 50%);
+        --text-dark: hsl(100, 20%, 15%);
+    }
+
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: fit-content;       
+    height: fit-content;
+    background-color: var(--bg);
+    font-family: 'Source Serif 4', serif;
+    font-weight: 300;
+    color: var(--accent);
+}
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+#main-container {
+    display: flex;
+    flex-direction: column;
+    width: fit-content; 
+    height: fit-content;
+    padding: 1.2em 1.5em;
+    background: var(--bg);
+    
+    box-sizing: border-box;
+    outline: 1px solid var(--border);
+    font-size: 1.1rem;
+
+    h1 {
+        font-size: 1em;
+        font-weight: 600;
+        padding-bottom: 0.25em;
+        border-bottom: 1px solid var(--border);
+        letter-spacing: 0.02em;
+    }
+}
+
+h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+    padding: 0;
+    font-family: 'Source Serif 4', serif;
+    color: var(--accent);
+}
+
+#settings-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8em;
+    padding-top: 0.25em;
+}
+
+.section-caption {
+    font-size: 0.7em;
+    text-transform: lowercase;
+    color: var(--text-dark);
+    font-family: 'Source Serif 4', serif;
+    font-weight: 500;
+}
+
+.setting-item {
+    display: grid;
+    grid-template-columns: 140px 100px 180px;
+    align-items: center;
+    gap: 1em;
+}
+
+.setting-label {
+    font-size: 0.75em;
+    font-weight: 300;
+    color: var(--accent);
+    text-align: right;
+    letter-spacing: 0.01em;
+}
+
+.importance-label {
+    font-size: 0.62em;
+    color: var(--text-light);
+    font-weight: 300;
+    font-style: italic;
+    white-space: nowrap;
+}
+
+.slider-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.slider-notches {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: none;
+}
+
+.notch {
+    width: 1px;
+    height: 6px;
+    background: var(--border);
+    opacity: 0.5;
+}
+
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 1px;
+    background: var(--border);
+    outline: none;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+    position: relative;
+    z-index: 1;
+}
+
+input[type="range"]:hover {
+    opacity: 1;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 8px;
+    height: 8px;
+    background: var(--accent);
+    cursor: pointer;
+    transition: transform 0.15s ease;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 8px;
+    height: 8px;
+    background: var(--accent);
+    border: none;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+    transform: scale(1.2);
+}
+
+
+</style>
+</head>
+  <body>
+    <div id="main-container">
+        <h1>Sustainify</h1>
+        <div id="settings-container">
+            <div class="section-caption">your values:</div>
+            
+            <div class="setting-item">
+                <div class="setting-label">Country of Origin</div>
+                <div class="importance-label" id="label-country">very important</div>
+                <div class="slider-wrapper">
+                    <div class="slider-notches">
+                        <span class="notch"></span>
+                        <span class="notch"></span>
+                        <span class="notch"></span>
+                        <span class="notch"></span>
+                        <span class="notch"></span>
+                    </div>
+                    <input type="range" min="0" max="4" value="0" step="1" id="slider-country">
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-label">Sustainable Materials</div>
+                <div class="importance-label" id="label-materials">very important</div>
+                <div class="slider-wrapper">
+                    <div class="slider-notches">
+                        <span class="notch"></span>
+                        <span class="notch"></span>
+                        <span class="notch"></span>
+                        <span class="notch"></span>
+                        <span class="notch"></span>
+                    </div>
+                    <input type="range" min="0" max="4" value="0" step="1" id="slider-materials">
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-label">Animal Cruelty</div>
+                <div class="importance-label" id="label-animal">very important</div>
+                <div class="slider-wrapper">
+                    <div class="slider-notches">
+                        <span class="notch"></span>
+                        <span class="notch"></span>
+                        <span class="notch"></span>
+                        <span class="notch"></span>
+                        <span class="notch"></span>
+                    </div>
+                    <input type="range" min="0" max="4" value="0" step="1" id="slider-animal">
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-label">Fair Labor</div>
+                <div class="importance-label" id="label-labor">very important</div>
+                <div class="slider-wrapper">
+                    <div class="slider-notches">
+                        <span class="notch"></span>
+                        <span class="notch"></span>
+                        <span class="notch"></span>
+                        <span class="notch"></span>
+                        <span class="notch"></span>
+                    </div>
+                    <input type="range" min="0" max="4" value="0" step="1" id="slider-labor">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const importanceLabels = [
+            'very important',
+            'important',
+            'neutral',
+            'unimportant',
+            'very unimportant'
+        ];
+        
+        const sliders = ['country', 'materials', 'animal', 'labor'];
+        
+        sliders.forEach(name => {
+            const slider = document.getElementById(`slider-${name}`);
+            const label = document.getElementById(`label-${name}`);
+            
+            slider.addEventListener('input', (e) => {
+                label.textContent = importanceLabels[e.target.value];
+            });
+        });
+    </script>
+  </body>
+</html>
