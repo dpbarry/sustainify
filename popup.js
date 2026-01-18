@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const setTheme = dark => {
         document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-        iconSun.style.display = dark ? 'none' : 'block';
-        iconMoon.style.display = dark ? 'block' : 'none';
+        iconSun.style.display = dark ? 'block' : 'none';
+        iconMoon.style.display = dark ? 'none' : 'block';
     };
 
     chrome.storage.sync.get([...keys, 'darkMode'], r => {
@@ -24,4 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
         setTheme(dark);
         chrome.storage.sync.set({ darkMode: dark });
     };
+
+    chrome.storage.onChanged.addListener((changes, area) => {
+        if (area === 'sync' && changes.darkMode) {
+            setTheme(changes.darkMode.newValue);
+        }
+    });
 });

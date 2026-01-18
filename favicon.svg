@@ -2,9 +2,9 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="22.086916mm"
-   height="22.264702mm"
-   viewBox="0 0 22.086916 22.264702"
+   width="30.973089mm"
+   height="30.973089mm"
+   viewBox="0 0 30.973089 30.973089"
    version="1.1"
    id="svg1"
    inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
@@ -26,22 +26,22 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
-     inkscape:zoom="5.6568542"
-     inkscape:cx="75.572038"
-     inkscape:cy="43.575456"
+     inkscape:zoom="4"
+     inkscape:cx="2.375"
+     inkscape:cy="53.875"
      inkscape:window-width="1920"
      inkscape:window-height="1174"
      inkscape:window-x="-11"
      inkscape:window-y="-11"
      inkscape:window-maximized="1"
-     inkscape:current-layer="layer2" />
+     inkscape:current-layer="layer1" />
   <defs
      id="defs1" />
   <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-86.551907,-118.95449)">
+     transform="translate(-83.936627,-119.88743)">
     <text
        xml:space="preserve"
        style="font-size:38.7459px;text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#2d5016;stroke-width:0.605405"
@@ -53,35 +53,22 @@
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:38.7459px;font-family:Perpetua;-inkscape-font-specification:Perpetua;fill:#2d5016;stroke-width:0.605405"
          x="87.058739"
          y="143.05855" /></text>
-    <circle
-       style="fill:#0043d7;fill-opacity:1;stroke:none;stroke-width:0.411404;stroke-dasharray:none;stroke-opacity:1"
-       id="path2"
-       cx="100.89134"
-       cy="126.70197"
-       r="7.7474813" />
-    <ellipse
-       style="fill:#2ca02c;fill-opacity:1;stroke:none;stroke-width:0.108025;stroke-dasharray:none;stroke-opacity:1"
-       id="path2-8"
-       cx="104.2549"
-       cy="125.34249"
-       rx="2.0031586"
-       ry="2.0659325" />
   </g>
   <g
      inkscape:groupmode="layer"
      id="layer2"
      inkscape:label="Layer 2"
-     transform="translate(-86.551907,-118.95449)">
+     transform="translate(-83.936627,-119.88743)">
     <text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:900;font-stretch:normal;font-size:32.0459px;font-family:'Source Serif 4';-inkscape-font-specification:'Source Serif 4 Heavy';text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#00bd75;fill-opacity:1;stroke:none;stroke-width:0.35;stroke-dasharray:none;stroke-opacity:1"
-       x="85.334221"
-       y="140.7065"
+       style="font-style:normal;font-variant:normal;font-weight:900;font-stretch:normal;font-size:32.6261px;font-family:'Source Serif 4';-inkscape-font-specification:'Source Serif 4 Heavy';text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#008452;fill-opacity:1;stroke:none;stroke-width:0.356337;stroke-dasharray:none;stroke-opacity:1"
+       x="91.596024"
+       y="145.79044"
        id="text8"><tspan
          sodipodi:role="line"
          id="tspan8"
-         style="font-style:normal;font-variant:normal;font-weight:900;font-stretch:normal;font-family:'Source Serif 4';-inkscape-font-specification:'Source Serif 4 Heavy';fill:#00bd75;fill-opacity:1;stroke:none;stroke-width:0.35;stroke-dasharray:none;stroke-opacity:1"
-         x="85.334221"
-         y="140.7065">S</tspan></text>
+         style="font-style:normal;font-variant:normal;font-weight:900;font-stretch:normal;font-family:'Source Serif 4';-inkscape-font-specification:'Source Serif 4 Heavy';fill:#008452;fill-opacity:1;stroke:none;stroke-width:0.356337;stroke-dasharray:none;stroke-opacity:1"
+         x="91.596024"
+         y="145.79044">S</tspan></text>
   </g>
 </svg>
