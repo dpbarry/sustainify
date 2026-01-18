@@ -6,7 +6,7 @@ styleSheet.textContent = `
     }
     @keyframes loading-progress {
         from { width: 0%; }
-        to { width: 100%; }
+        to { width: 95%; }
     }
 `;
 document.head.appendChild(styleSheet);
@@ -30,7 +30,26 @@ const ICONS_SVG = {
     health: `<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 7v6M9 10h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
     social: `<circle cx="9" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 3.13a4 4 0 0 1 0 7.75" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M21 21v-2a4 4 0 0 0-3-3.85" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
     sun: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`,
-    moon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`
+    moon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`,
+    home: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`
+};
+
+// Personal view toggle state
+let personalViewActive = false;
+let cachedUserWeights = { environment: 1.25, social: 1.25, resources: 1.25, health: 1.25 };
+
+// Slider value (0-4) to weight (0.5-1.5)
+const sliderToWeight = v => 0.5 + (v / 4);
+
+// Calculate personal score: weights scale the subscores directly
+// Personal score = average of (subscore × weight), clamped to 0-100
+const calculatePersonalScore = (scores, weights) => {
+    const scaledEnv = scores.environmental * weights.environment;
+    const scaledRes = scores.resource * weights.resources;
+    const scaledHealth = scores.health * weights.health;
+    const scaledSocial = scores.social * weights.social;
+    const avg = (scaledEnv + scaledRes + scaledHealth + scaledSocial) / 4;
+    return Math.round(Math.min(100, Math.max(0, avg)));
 };
 
 const THEMES = {
@@ -50,7 +69,8 @@ const THEMES = {
         dismissHover: 'hsl(155 40% 28%)',
         chartFill: 'hsl(155 40% 28% / 0.2)',
         chartStroke: 'hsl(155 40% 28%)',
-        chartAxis: 'hsl(145 20% 80%)'
+        chartAxis: 'hsl(145 20% 80%)',
+        btnHover: 'hsl(145 20% 90%)'
     },
     dark: {
         bg: 'hsl(155 25% 10%)',
@@ -60,15 +80,16 @@ const THEMES = {
         accent: 'hsl(155 50% 55%)',
         accentSoft: 'hsl(155 40% 40%)',
         muted: 'hsl(155 15% 50%)',
-        shadow: '0 1px 3px hsl(0 0% 0% / 0.4), inset 0 1px 0 hsl(155 20% 20%)',
-        shadowHover: '0 6px 12px hsl(0 0% 0% / 0.5), inset 0 1px 0 hsl(155 20% 22%)',
+        shadow: '0 1px 3px hsl(0 0% 0% / 0.4)',
+        shadowHover: '0 6px 12px hsl(0 0% 0% / 0.5)',
         progressBg: 'hsl(155 20% 20%)',
         spinnerColor: 'hsl(155 50% 55%)',
         dismissColor: 'hsl(155 15% 50%)',
         dismissHover: 'hsl(155 50% 55%)',
         chartFill: 'hsl(155 50% 55% / 0.2)',
         chartStroke: 'hsl(155 50% 55%)',
-        chartAxis: 'hsl(155 15% 25%)'
+        chartAxis: 'hsl(155 15% 25%)',
+        btnHover: 'hsl(155 20% 20%)'
     }
 };
 
@@ -87,21 +108,16 @@ const describeArc = (cx, cy, r, startA, endA) => {
 };
 
 const getScoreColor = (score, isDark) => {
-    if (score >= 70) {
-        const ratio = (score - 70) / 30;
-        return isDark
-            ? `hsl(155, ${40 + ratio * 10}%, ${45 + ratio * 10}%)`
-            : `hsl(155, ${35 + ratio * 5}%, ${25 + ratio * 3}%)`;
-    } else if (score >= 40) {
-        const ratio = (score - 40) / 30;
-        return `hsl(${35 + ratio * 120}, ${45 + ratio * 10}%, ${isDark ? 50 : 35}%)`;
-    } else {
-        const ratio = score / 40;
-        return `hsl(${ratio * 35}, ${55 + ratio * 10}%, ${isDark ? 45 : 38}%)`;
-    }
+    // Hue spectrum: 0 = red (0°), 50 = yellow (55°), 100 = sage green (130°)
+    const hue = score <= 50
+        ? (score / 50) * 55           // 0→55 for scores 0→50
+        : 55 + ((score - 50) / 50) * 75; // 55→130 for scores 50→100
+    const saturation = 55;
+    const lightness = isDark ? 50 : 45;
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 };
 
-const renderGaugeChart = (score, isDark, t) => {
+const renderGaugeChart = (score, isDark, t, isPersonal = false) => {
     const gaugeSize = 160;
     const gaugeCx = gaugeSize / 2;
     const gaugeCy = gaugeSize / 2 + 10;
@@ -129,8 +145,10 @@ const renderGaugeChart = (score, isDark, t) => {
             <path d="${scoreArc}" fill="none" stroke="${isDark ? 'hsl(155 10% 25%)' : 'hsl(155 15% 70%)'}" stroke-width="${gaugeStroke + 2}" stroke-linecap="round" class="score-arc-border"/>
             <path d="${scoreArc}" fill="none" stroke="${scoreColor}" stroke-width="${gaugeStroke}" stroke-linecap="round" filter="url(#arcShadow)" class="score-arc"/>
             <text x="${gaugeCx}" y="${gaugeCy - 2}" text-anchor="middle" dominant-baseline="middle" class="gauge-score" fill="${t.text}">${score}</text>
-            <text x="${gaugeCx}" y="${gaugeCy + 28}" text-anchor="middle" class="gauge-label" fill="${t.muted}">Green</text>
-            <text x="${gaugeCx}" y="${gaugeCy + 40}" text-anchor="middle" class="gauge-label" fill="${t.muted}">Score</text>
+            <text x="${gaugeCx}" y="${gaugeCy + 28}" text-anchor="middle" class="gauge-label label-green ${isPersonal ? 'hidden' : ''}" fill="${t.muted}">Green</text>
+            <text x="${gaugeCx}" y="${gaugeCy + 40}" text-anchor="middle" class="gauge-label label-green ${isPersonal ? 'hidden' : ''}" fill="${t.muted}">Score</text>
+            <text x="${gaugeCx}" y="${gaugeCy + 28}" text-anchor="middle" class="gauge-label label-personal ${isPersonal ? '' : 'hidden'}" fill="${t.muted}">My</text>
+            <text x="${gaugeCx}" y="${gaugeCy + 40}" text-anchor="middle" class="gauge-label label-personal ${isPersonal ? '' : 'hidden'}" fill="${t.muted}">Score</text>
         </svg>
     `;
 };
@@ -237,7 +255,7 @@ const pollPipeline = (runId, onComplete, onError) => {
             .then(result => {
                 console.log('Poll result:', result.state);
                 if (result.state === 'DONE') onComplete(result.outputs);
-                else if (result.state === 'RUNNING') setTimeout(poll, 1000);
+                else if (result.state === 'RUNNING') setTimeout(poll, 500);
                 else onError?.(result);
             })
             .catch(onError);
@@ -245,18 +263,25 @@ const pollPipeline = (runId, onComplete, onError) => {
     poll();
 };
 
-const startPipeline = (pipelineId, inputName = 'URL') => {
+
+
+
+const startPipeline = (pipelineId, inputContent, inputName = 'Product Content') => {
     return fetch(`https://api.gumloop.com/api/v1/start_pipeline?user_id=${GUMLOOP_USER_ID}&saved_item_id=${pipelineId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GUMLOOP_API_KEY}` },
-        body: JSON.stringify({ [inputName]: PAGE_URL })
+        body: JSON.stringify({ [inputName]: inputContent })
     }).then(res => res.json());
+};
+
+const getPageText = () => {
+    return document.body.innerText;
 };
 
 // Main Execution Flow
 console.log('Sustainify: Checking page...');
 
-startPipeline(GUMLOOP_DETECT_PIPELINE)
+startPipeline(GUMLOOP_DETECT_PIPELINE, PAGE_URL, 'URL')
     .then(data => {
         console.log('Detection pipeline started, run_id:', data.run_id);
         pollPipeline(data.run_id, (outputs) => {
@@ -269,23 +294,31 @@ startPipeline(GUMLOOP_DETECT_PIPELINE)
             }
 
             console.log('Sustainify: Product detected, starting analysis...');
+            const pageText = getPageText();
             showSnackbar();
 
-            startPipeline(GUMLOOP_ANALYSIS_PIPELINE, 'Product URL')
+            startPipeline(GUMLOOP_ANALYSIS_PIPELINE, pageText, 'Product Content')
                 .then(analysisData => {
                     console.log('Analysis pipeline started, run_id:', analysisData.run_id);
                     pollPipeline(analysisData.run_id, (analysisOutputs) => {
                         console.log('Analysis complete:', analysisOutputs);
+
+                        // Smooth finish animation
+                        const currentWidth = window.getComputedStyle(progressBar).width;
+                        progressBar.style.width = currentWidth;
                         progressBar.style.animation = 'none';
+                        progressBar.offsetHeight; // Force reflow
+
+                        progressBar.style.transition = 'width 250ms cubic-bezier(0.4, 0, 0.2, 1)'; // Fast zoom to end
                         progressBar.style.width = '100%';
-                        progressBar.style.transition = 'width 0.1s ease';
+                        progressBar.style.borderRight = 'none';
 
                         setTimeout(() => {
                             snackbar.style.opacity = '0';
                             snackbar.style.transform = 'translateY(-10px) scale(0.98)';
                             setTimeout(() => snackbar.remove(), 350);
                             showResultsPopup(analysisOutputs);
-                        }, 400);
+                        }, 250);
                     }, err => console.error('Analysis failed:', err));
                 })
                 .catch(err => console.error('Failed to start analysis:', err));
@@ -298,7 +331,8 @@ const rerenderAnalysisPanel = (popup, scores, justifications) => {
     if (!popup) return;
     const isDark = currentDarkMode;
     const t = isDark ? THEMES.dark : THEMES.light;
-    const averageScore = Math.round((scores.environmental + scores.health + scores.resource + scores.social) / 4);
+    const normalScore = Math.round((scores.environmental + scores.health + scores.resource + scores.social) / 4);
+    const displayScore = personalViewActive ? calculatePersonalScore(scores, cachedUserWeights) : normalScore;
 
     // Update Popup Styles
     Object.assign(popup.style, { background: t.bg, color: t.text, borderColor: t.border, boxShadow: t.shadow });
@@ -307,6 +341,11 @@ const rerenderAnalysisPanel = (popup, scores, justifications) => {
     if (themeBtn) {
         themeBtn.innerHTML = isDark ? ICONS_SVG.sun : ICONS_SVG.moon;
         Object.assign(themeBtn.style, { borderColor: t.border, color: t.accent });
+    }
+
+    const homeBtn = popup.querySelector('.home-btn');
+    if (homeBtn) {
+        Object.assign(homeBtn.style, { borderColor: t.border, color: t.accent });
     }
 
     const closeBtn = popup.querySelector('button[aria-label="Close"]');
@@ -321,12 +360,16 @@ const rerenderAnalysisPanel = (popup, scores, justifications) => {
     const suggestedSection = popup.querySelector('.suggested-section');
     if (suggestedSection) suggestedSection.style.borderTopColor = t.border;
 
-    // Rerender Charts
+    // Rerender Charts with correct score based on personal view state
     const gaugeContainer = popup.querySelector('.gauge-container');
-    if (gaugeContainer) gaugeContainer.innerHTML = renderGaugeChart(averageScore, isDark, t);
+    if (gaugeContainer) gaugeContainer.innerHTML = renderGaugeChart(displayScore, isDark, t, personalViewActive);
 
     const radarContainer = popup.querySelector('.radar-container');
     if (radarContainer) radarContainer.innerHTML = renderRadarChart(scores, isDark, t);
+
+    // Update Styles
+    const styleTag = popup.querySelector('style');
+    if (styleTag) styleTag.textContent = getPopupStyles(t);
 
     // Reattach hover listeners since radar chart was replaced
     setupTooltipListeners(popup, scores, justifications);
@@ -374,17 +417,22 @@ const showResultsPopup = (outputs) => {
         themeBtn.setAttribute('aria-label', 'Toggle theme');
         themeBtn.innerHTML = isDark ? ICONS_SVG.sun : ICONS_SVG.moon;
 
+        const homeBtn = document.createElement('button');
+        homeBtn.className = 'home-btn';
+        homeBtn.setAttribute('aria-label', 'Open Dashboard');
+        homeBtn.innerHTML = ICONS_SVG.home;
+
         const closeBtn = document.createElement('button');
         closeBtn.innerHTML = '×';
         closeBtn.setAttribute('aria-label', 'Close');
 
         popup.innerHTML = `
-            <div class="gauge-container">${renderGaugeChart(averageScore, isDark, t)}</div>
+            <div class="gauge-container">${renderGaugeChart(averageScore, isDark, t, false)}</div>
             <div class="hover-hint">hover icons for explanation</div>
             <div class="radar-container">${renderRadarChart(scores, isDark, t)}</div>
             ${suggestedSection}
         `;
-        popup.append(tooltip, themeBtn, closeBtn);
+        popup.append(tooltip, themeBtn, homeBtn, closeBtn);
 
         // --- Styles & Events ---
 
@@ -406,8 +454,15 @@ const showResultsPopup = (outputs) => {
 
         // Button Styles
         Object.assign(themeBtn.style, {
-            position: 'absolute', top: '10px', left: '12px', display: 'flex', placeItems: 'center',
-            width: '28px', height: '28px', background: 'none', border: `1px solid ${t.border}`,
+            position: 'absolute', top: '10px', left: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center',
+            width: '28px', height: '28px', border: `1px solid ${t.border}`, padding: '0', margin: '0',
+            borderRadius: '6px', color: t.accent, cursor: 'pointer', transition: 'background 0.2s, border-color 0.2s'
+        });
+
+        // Home Button Styles
+        Object.assign(homeBtn.style, {
+            position: 'absolute', top: '10px', left: '48px', display: 'flex', justifyContent: 'center', alignItems: 'center',
+            width: '28px', height: '28px', border: `1px solid ${t.border}`, padding: '0', margin: '0',
             borderRadius: '6px', color: t.accent, cursor: 'pointer', transition: 'background 0.2s, border-color 0.2s'
         });
 
@@ -418,13 +473,78 @@ const showResultsPopup = (outputs) => {
         });
 
         // Event Listeners
-        themeBtn.addEventListener('mouseenter', () => themeBtn.style.background = t.card);
-        themeBtn.addEventListener('mouseleave', () => themeBtn.style.background = 'none');
         themeBtn.addEventListener('click', () => {
             currentDarkMode = !currentDarkMode;
             chrome.storage.sync.set({ darkMode: currentDarkMode });
             // Rerender will happen via storage listener, but we call it here for instant feel
             rerenderAnalysisPanel(popup, scores, justifications);
+        });
+
+        homeBtn.addEventListener('click', () => {
+            window.open(chrome.runtime.getURL('dashboard.html'), '_blank');
+        });
+
+        // Gauge click to toggle personal/green score view
+        const gaugeContainer = popup.querySelector('.gauge-container');
+        gaugeContainer.addEventListener('click', () => {
+            personalViewActive = !personalViewActive;
+
+            // Load weights from storage and calculate personal score
+            chrome.storage.sync.get(['environment', 'social', 'resources', 'health'], prefs => {
+                console.log('Sustainify - Slider prefs from storage:', prefs);
+                const weights = {
+                    environment: sliderToWeight(prefs.environment ?? 3),
+                    social: sliderToWeight(prefs.social ?? 3),
+                    resources: sliderToWeight(prefs.resources ?? 3),
+                    health: sliderToWeight(prefs.health ?? 3)
+                };
+                console.log('Sustainify - Calculated weights:', weights);
+                cachedUserWeights = weights;
+
+                const normalScore = Math.round((scores.environmental + scores.health + scores.resource + scores.social) / 4);
+                const personalScore = calculatePersonalScore(scores, weights);
+                console.log('Sustainify - Scores:', { normalScore, personalScore, scores });
+                const targetScore = personalViewActive ? personalScore : normalScore;
+
+                const isDark = currentDarkMode;
+                const t = isDark ? THEMES.dark : THEMES.light;
+
+                // Cross-fade labels
+                const labelGreens = gaugeContainer.querySelectorAll('.label-green');
+                const labelPersonals = gaugeContainer.querySelectorAll('.label-personal');
+                labelGreens.forEach(el => el.classList.toggle('hidden', personalViewActive));
+                labelPersonals.forEach(el => el.classList.toggle('hidden', !personalViewActive));
+
+                // Animate score number and arc
+                const scoreText = gaugeContainer.querySelector('.gauge-score');
+                const scoreArc = gaugeContainer.querySelector('.score-arc');
+                const scoreArcBorder = gaugeContainer.querySelector('.score-arc-border');
+
+                const startScore = parseInt(scoreText.textContent);
+                const duration = 400;
+                const startTime = performance.now();
+
+                const animateScore = (now) => {
+                    const elapsed = now - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+                    const currentScore = Math.round(startScore + (targetScore - startScore) * eased);
+
+                    scoreText.textContent = currentScore;
+
+                    // Update arc
+                    const startAngle = 220, endAngle = 500;
+                    const totalArc = endAngle - startAngle;
+                    const scoreAngle = startAngle + (currentScore / 100) * totalArc;
+                    const newArc = describeArc(80, 90, 55, startAngle, scoreAngle);
+                    scoreArc.setAttribute('d', newArc);
+                    scoreArcBorder.setAttribute('d', newArc);
+                    scoreArc.style.stroke = getScoreColor(currentScore, isDark);
+
+                    if (progress < 1) requestAnimationFrame(animateScore);
+                };
+                requestAnimationFrame(animateScore);
+            });
         });
 
         closeBtn.addEventListener('mouseenter', () => { closeBtn.style.color = t.dismissHover; closeBtn.style.transform = 'scale(1.15)'; closeBtn.style.opacity = '1'; });
@@ -489,13 +609,32 @@ const setupTooltipListeners = (popup, scores, justifications) => {
 
 const getPopupStyles = (t) => `
     @keyframes arcDraw { from { stroke-dashoffset: 300; } to { stroke-dashoffset: 0; } }
-    #sustainify-results .gauge-container { width: 100%; display: flex; justify-content: center; }
+    
+    /* Clickable gauge for toggle */
+    #sustainify-results .gauge-container { 
+        width: 100%; 
+        display: flex; 
+        justify-content: center; 
+        cursor: pointer;
+        transition: transform 0.15s ease;
+    }
+    #sustainify-results .gauge-container:hover {
+        transform: scale(1.02);
+    }
+    #sustainify-results .gauge-container:active {
+        transform: scale(0.98);
+    }
+    
     #sustainify-results .theme-toggle-btn svg { display: block; }
+    #sustainify-results .theme-toggle-btn, #sustainify-results .home-btn { background: transparent; }
+    #sustainify-results .theme-toggle-btn:hover, #sustainify-results .home-btn:hover { background-color: ${t.btnHover} !important; }
     #sustainify-results .score-gauge { width: 160px; height: 170px; }
     #sustainify-results .score-arc, #sustainify-results .score-arc-border { stroke-dasharray: 300; animation: arcDraw 1s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
-    #sustainify-results .gauge-score { font-size: 42px; font-weight: 600; font-family: 'Source Serif 4', Georgia, serif; letter-spacing: -0.02em; }
-    #sustainify-results .gauge-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; font-family: 'Source Serif 4', Georgia, serif; }
-    #sustainify-results .hover-hint { font-size: 10px; font-style: italic; color: ${t.muted}; text-align: center; opacity: 0.7; margin-top: 4px; }
+    #sustainify-results .gauge-score { font-size: 42px; font-weight: 600; font-family: 'Source Serif 4', Georgia, serif; letter-spacing: -0.02em; transition: opacity 0.3s ease; }
+    #sustainify-results .gauge-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; font-family: 'Source Serif 4', Georgia, serif; transition: opacity 0.3s ease; }
+    #sustainify-results .gauge-label.hidden { opacity: 0; }
+    #sustainify-results .label-green, #sustainify-results .label-personal { transition: opacity 0.3s ease; }
+    #sustainify-results .hover-hint { font-size: 10px; font-style: italic; color: ${t.muted}; text-align: center; opacity: 0.7; margin-top: -20px; }
     #sustainify-results .radar-container { width: 100%; display: flex; justify-content: center; margin-top: -4px; }
     #sustainify-results .radar-chart { width: 200px; height: 170px; }
     #sustainify-results .icon-caption { font-size: 9px; font-weight: 600; opacity: 0.75; font-family: 'Source Serif 4', Georgia, serif; }
@@ -506,15 +645,31 @@ const getPopupStyles = (t) => `
     #sustainify-results .suggested-section { width: 100%; margin-top: 8px; padding-top: 12px; border-top: 1px solid ${t.border}; }
     #sustainify-results .suggested-header { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: ${t.accent}; margin-bottom: 8px; }
     #sustainify-results .suggested-empty { font-size: 12px; color: ${t.muted}; font-style: italic; text-align: center; padding: 12px 0; }
+    
     #sustainify-results .chart-tooltip {
         position: absolute; background: ${t.card}; border: 1px solid ${t.border}; border-radius: 10px;
         padding: 12px 16px; font-size: 12px; line-height: 1.5; max-width: 260px; width: max-content;
         box-shadow: ${t.shadowHover}; opacity: 0; visibility: hidden; transform: translateY(6px);
         transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s; pointer-events: none; z-index: 100;
+        :first-child {
+            font-size: 15px;
+        }
     }
     #sustainify-results .chart-tooltip.visible { opacity: 1; visibility: visible; transform: translateY(0); }
     #sustainify-results .chart-tooltip .tooltip-title { font-weight: 600; color: ${t.accent}; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
-    #sustainify-results .chart-tooltip .tooltip-score { font-size: 11px; color: ${t.muted}; background: ${t.bg}; padding: 2px 8px; border-radius: 10px; }
+    #sustainify-results .chart-tooltip .tooltip-score { 
+        font-size: 12px; 
+        color: ${t.text}; 
+        background: ${t.bg}; 
+        padding: 0 10px; 
+        height: 22px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        line-height: 1;
+        font-feature-settings: "tnum";
+    }
     #sustainify-results .chart-tooltip .tooltip-text { color: ${t.text}; opacity: 0.85; line-height: 1.6; }
 `;
 
@@ -541,13 +696,13 @@ Object.assign(snackbar.style, {
 
 Object.assign(progressBar.style, {
     position: 'absolute', top: '0', left: '0', height: '100%', width: '0%',
-    borderRadius: '5px 0 0 5px', opacity: '0.5', animation: 'loading-progress 10s cubic-bezier(0.25, 0.1, 0.25, 1) forwards',
+    borderRadius: '5px 0 0 5px', opacity: '0.5', animation: 'loading-progress 6s cubic-bezier(0.25, 0.1, 0.25, 1) forwards',
     pointerEvents: 'none', zIndex: '0'
 });
 
 Object.assign(spinner.style, {
     width: '14px', height: '14px', border: '2px solid transparent', borderRadius: '50%',
-    animation: 'loading-spin 0.8s linear infinite', flexShrink: '0', position: 'relative', zIndex: '1'
+    animation: 'loading-spin 1s cubic-bezier(0.45, 0.2, 0.55, 0.8) infinite', flexShrink: '0', position: 'relative', zIndex: '1'
 });
 
 Object.assign(textSpan.style, { position: 'relative', zIndex: '1' });
