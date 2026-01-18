@@ -153,7 +153,7 @@ const updatePlantGrowth = (avgScore) => {
     const maxStemHeight = 280; // Max height at score 100
     const potentialTopY = stemBaseY - maxStemHeight;
     const isDarkMode = document.body.dataset.theme === 'dark';
-    const guideLineColor = isDarkMode ? 'hsl(155 25% 35%)' : 'hsl(155 25% 75%)';
+    const guideLineColor = isDarkMode ? 'hsl(155 25% 35%)' : 'hsl(155 30% 60%)';
     svg += `<line 
         x1="${centerX}" y1="${stemBaseY - 10}" 
         x2="${centerX}" y2="${potentialTopY}" 
