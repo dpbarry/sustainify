@@ -1,97 +1,176 @@
-const body = document.body;
-const toggleBtn = document.getElementById("sun-toggle");
-const toggleIcon = document.getElementById("toggle-icon");
-const backdropFade = document.getElementById("backdrop-fade");
-const scoreInput = document.getElementById("score-input");
-const scoreValue = document.getElementById("score-value");
-let fadeTimer = null;
+// Theme toggle
+const themeBtn = document.getElementById('btn-theme');
+const iconSun = themeBtn.querySelector('.icon-sun');
+const iconMoon = themeBtn.querySelector('.icon-moon');
 
-const setBackdrop = (name) => {
-    const imageUrl = `backdrops/${name}.png`;
-    body.dataset.backdrop = name;
-    backdropFade.style.transition = "none";
-    backdropFade.style.opacity = "0";
-    backdropFade.style.background = `#f5faf6 url("${imageUrl}") center/cover no-repeat`;
-    backdropFade.offsetHeight;
-    backdropFade.style.transition = "opacity 5s ease";
-    backdropFade.style.opacity = "1";
-
-    if (fadeTimer) {
-        clearTimeout(fadeTimer);
-    }
-
-    fadeTimer = setTimeout(() => {
-        body.style.background = `#f5faf6 url("${imageUrl}") center/cover no-repeat`;
-        backdropFade.style.transition = "none";
-        backdropFade.style.opacity = "0";
-    }, 3000);
+const setTheme = (dark) => {
+    document.body.dataset.theme = dark ? 'dark' : 'light';
+    iconSun.style.display = dark ? 'none' : 'block';
+    iconMoon.style.display = dark ? 'block' : 'none';
 };
 
-const parseBackdrop = () => {
-    const match = (body.dataset.backdrop || "").match(/^(day|night)(\d)$/);
-    if (!match) {
-        return { mode: "day", index: "3" };
-    }
-    return { mode: match[1], index: match[2] };
-};
-
-const getBackdropForScore = (score, mode) => {
-    if (!Number.isFinite(score)) {
-        return null;
-    }
-
-    let index = 1;
-    if (score >= 85) {
-        index = 5;
-    } else if (score >= 60) {
-        index = 4;
-    } else if (score >= 50) {
-        index = 3;
-    } else if (score >= 40) {
-        index = 2;
-    }
-
-    return `${mode}${index}`;
-};
-
-const updateToggleLabel = (mode) => {
-    toggleBtn.setAttribute(
-        "aria-label",
-        mode === "day" ? "Switch to night" : "Switch to day"
-    );
-};
-
-const updateToggleIcon = (mode) => {
-    toggleIcon.src = mode === "day"
-        ? "backdrops/sun.png"
-        : "backdrops/moon.png";
-};
-
-toggleBtn.addEventListener("click", () => {
-    const { mode, index } = parseBackdrop();
-    const nextMode = mode === "day" ? "night" : "day";
-    setBackdrop(`${nextMode}${index}`);
-    updateToggleLabel(nextMode);
-    updateToggleIcon(nextMode);
+chrome.storage.sync.get(['darkMode'], prefs => {
+    setTheme(prefs.darkMode ?? false);
 });
 
-const applyScoreBackdrop = () => {
-    const mode = parseBackdrop().mode;
-    const backdrop = getBackdropForScore(Number(scoreInput.value), mode);
-    if (!backdrop) {
-        return;
-    }
-    setBackdrop(backdrop);
-    updateToggleLabel(mode);
-    updateToggleIcon(mode);
-};
-
-scoreInput.addEventListener("input", () => {
-    scoreValue.textContent = scoreInput.value;
-    applyScoreBackdrop();
+themeBtn.addEventListener('click', () => {
+    const isDark = document.body.dataset.theme === 'dark';
+    setTheme(!isDark);
+    chrome.storage.sync.set({ darkMode: !isDark });
 });
 
-const initialMode = parseBackdrop().mode;
-updateToggleLabel(initialMode);
-updateToggleIcon(initialMode);
+// Sync theme changes from other contexts
+chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'sync' && changes.darkMode) {
+        setTheme(changes.darkMode.newValue);
+    }
+    // Also refresh stash if it changes elsewhere
+    if (area === 'sync' && changes.stash) {
+        renderStash();
+    }
+});
+
+// Format date
+const formatDate = (iso) => {
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+// Sort state
+let currentSort = 'recency';
+
+// Render stash
+const renderStash = () => {
+    chrome.storage.sync.get(['stash'], result => {
+        const stash = result.stash ? JSON.parse(result.stash) : [];
+        console.log('Sustainify Stash:', stash);
+
+        const listEl = document.getElementById('stash-list');
+        const avgEl = document.getElementById('avg-number');
+
+        if (stash.length === 0) {
+            listEl.innerHTML = '<div class="empty">No items stashed yet</div>';
+            avgEl.textContent = '--';
+            return;
+        }
+
+        // Calculate average
+        const totalAvg = Math.round(stash.reduce((sum, item) => sum + (item.scores.average || 0), 0) / stash.length);
+        avgEl.textContent = totalAvg;
+
+        let html = '';
+
+        if (currentSort === 'recency') {
+            html = stash.slice().reverse().map((item, i) => {
+                const originalIndex = stash.length - 1 - i;
+                return renderItem(item, originalIndex, i * 0.04);
+            }).join('');
+        } else if (currentSort === 'category') {
+            // Group by category
+            const grouped = stash.reduce((acc, item, index) => {
+                const type = item.type || 'Uncategorized';
+                if (!acc[type]) acc[type] = [];
+                acc[type].push({ ...item, originalIndex: index });
+                return acc;
+            }, {});
+
+            // Sort categories alphabetically-ish (Uncategorized last)
+            const categories = Object.keys(grouped).sort((a, b) => {
+                if (a === 'Uncategorized') return 1;
+                if (b === 'Uncategorized') return -1;
+                return a.localeCompare(b);
+            });
+
+            html = categories.map(cat => `
+                <div class="category-header">${cat}</div>
+                ${grouped[cat].map((item, i) => renderItem(item, item.originalIndex, i * 0.04)).join('')}
+            `).join('');
+        }
+
+        listEl.innerHTML = html;
+
+        // Attach delete listeners
+        attachDeleteListeners();
+    });
+};
+
+const renderItem = (item, originalIndex, delay) => `
+    <div class="stash-row" style="position: relative; animation-delay: ${delay}s">
+        <a class="stash-item" href="${item.link}" target="_blank">
+            <div class="score">${item.scores.average}</div>
+            <div class="info">
+                <div class="name">${item.name}</div>
+                <div class="date">${formatDate(item.timestamp)}</div>
+            </div>
+        </a>
+        <button class="delete-btn" data-index="${originalIndex}" aria-label="Delete item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+    </div>
+`;
+
+const attachDeleteListeners = () => {
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation(); // Stop propagation so we don't click the link underneath/nearby if layout shifts (though button is absolute)
+            deleteItem(parseInt(btn.dataset.index));
+        });
+    });
+};
+
+// Sort handlers
+document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        currentSort = btn.dataset.sort;
+        chrome.storage.sync.set({ sortPreference: currentSort });
+
+        // Update active state
+        document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        renderStash();
+    });
+});
+
+const deleteItem = (index) => {
+    chrome.storage.sync.get(['stash'], result => {
+        if (!result.stash) return;
+        const stash = JSON.parse(result.stash);
+        stash.splice(index, 1);
+        chrome.storage.sync.set({ stash: JSON.stringify(stash) }, () => {
+            renderStash();
+        });
+    });
+};
+
+// Init: Load sort preference then render
+chrome.storage.sync.get(['sortPreference'], result => {
+    if (result.sortPreference) {
+        currentSort = result.sortPreference;
+        // Update UI buttons
+        document.querySelectorAll('.sort-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.sort === currentSort);
+        });
+    }
+    renderStash();
+});
+
+// Clear Stash button
+document.getElementById('btn-clear').addEventListener('click', () => {
+    chrome.storage.sync.remove('stash', () => {
+        location.reload();
+    });
+});
+
+const btnQuirky = document.getElementById('btn-quirky') || document.getElementById('btn-funky');
+if (btnQuirky) {
+    btnQuirky.addEventListener('click', () => {
+        window.location.href = 'quirkydashboard.html';
+    });
+}
+
 

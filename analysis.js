@@ -22,7 +22,13 @@ const GUMLOOP_USER_ID = '0tRVlm6oZphK1PR9l7aZKbtm6F03';
 const GUMLOOP_API_KEY = '42e34acecabd4bb8ba6836ed7d7fbdce';
 const GUMLOOP_DETECT_PIPELINE = 'iEffyHGNXYf3bgPeV1epnH';
 const GUMLOOP_ANALYSIS_PIPELINE = '1gnnojPMpuoQKtPvxbjrNX';
-const PAGE_URL = window.location.href;
+const GUMLOOP_ALTERNATIVES_PIPELINE = '4vnG2foJZQrAfR5n4kWwPo';
+
+// Track last analyzed URL to avoid duplicate runs
+let lastAnalyzedUrl = null;
+let isAnalyzing = false;
+let cachedAlternatives = null;
+let cachedCategory = null;
 
 const ICONS_SVG = {
     environmental: `<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
@@ -41,13 +47,59 @@ let cachedUserWeights = { environment: 1.25, social: 1.25, resources: 1.25, heal
 // Slider value (0-4) to weight (0.5-1.5)
 const sliderToWeight = v => 0.5 + (v / 4);
 
-// Calculate personal score: weights scale the subscores directly
-// Personal score = average of (subscore × weight), clamped to 0-100
+// Calculate personal score: improved weighting with pivot at 65
+// Scores < 65: High importance = PENALTY, Low importance = BOOST
+// Scores > 65: High importance = BOOST, Low importance = DAMPEN
 const calculatePersonalScore = (scores, weights) => {
-    const scaledEnv = scores.environmental * weights.environment;
-    const scaledRes = scores.resource * weights.resources;
-    const scaledHealth = scores.health * weights.health;
-    const scaledSocial = scores.social * weights.social;
+    const PIVOT = 85; // Harsh pivot: everything below 85 is considered 'lacking'
+    const AMPLIFICATION = 3.0; // Very powerful weighting effect
+
+    const getWeightedScore = (score, weight) => {
+        // Amplify the deviation of the weight from 1.0
+        const effectiveWeightDelta = (weight - 1) * AMPLIFICATION;
+        // Effective weight for calculation = 1 + delta
+        // e.g. Weight 1.5 -> Delta 0.5 -> Amp 1.25 -> Eff 2.25
+        // e.g. Weight 0.5 -> Delta -0.5 -> Amp -1.25 -> Eff -0.25 (Capped at 0 logic below handles this implicitly?)
+
+        let multiplier;
+        if (score >= PIVOT) {
+            // Scale from 1.0 at Pivot to `effectiveWeight` at 100
+            // Formula: 1 + (W_eff - 1) * progress
+            // (W_eff - 1) is simply effectiveWeightDelta
+            const progress = (score - PIVOT) / (100 - PIVOT);
+            multiplier = 1 + effectiveWeightDelta * progress;
+        } else {
+            // Scale from 1.0 at Pivot
+            // If High Importance (Delta > 0): Penalty.
+            // Formula was: 1 + (1 - W) * progress... wait.
+            // Let's stick to the Delta mental model.
+            // We want Multiplier to go DOWN if Delta is Positive (High Importance)
+            // We want Multiplier to go UP if Delta is Negative (Low Importance)
+
+            // At Pivot, multiplier is 1.
+            // At 0, we want max effect.
+
+            // Standard Linear Interpolation:
+            // Multiplier = 1 - (effectiveWeightDelta * progress)
+            // Check:
+            // High Imp (Delta +1.25). Progress 1 (Score 0). Mult = 1 - 1.25 = -0.25. (Clamp to 0).
+            // Low Imp (Delta -1.25). Progress 1 (Score 0). Mult = 1 - (-1.25) = 2.25. (Big Boost).
+
+            const progress = (PIVOT - score) / PIVOT;
+            multiplier = 1 - (effectiveWeightDelta * progress);
+        }
+
+        // Safety clamp for multiplier to prevent negative scores
+        multiplier = Math.max(0, multiplier);
+
+        return score * multiplier;
+    };
+
+    const scaledEnv = getWeightedScore(scores.environmental, weights.environment);
+    const scaledRes = getWeightedScore(scores.resource, weights.resources);
+    const scaledHealth = getWeightedScore(scores.health, weights.health);
+    const scaledSocial = getWeightedScore(scores.social, weights.social);
+
     const avg = (scaledEnv + scaledRes + scaledHealth + scaledSocial) / 4;
     return Math.round(Math.min(100, Math.max(0, avg)));
 };
@@ -278,53 +330,176 @@ const getPageText = () => {
     return document.body.innerText;
 };
 
-// Main Execution Flow
-console.log('Sustainify: Checking page...');
+const applyAlternativesToTiles = (tiles, items) => {
+    tiles.forEach((tile, i) => {
+        const num = i + 1;
+        const brand = items[`item${num}_brand`] || '';
+        const link = items[`item${num}_link`] || '';
 
-startPipeline(GUMLOOP_DETECT_PIPELINE, PAGE_URL, 'URL')
-    .then(data => {
-        console.log('Detection pipeline started, run_id:', data.run_id);
-        pollPipeline(data.run_id, (outputs) => {
-            console.log('Detection result:', outputs);
-            const isProduct = Object.values(outputs).some(v => v === '1' || v === 1);
+        tile.classList.remove('loading');
+        if (brand && link) {
+            tile.innerHTML = `<a href="${link}" target="_blank" class="alt-link">${brand}</a>`;
+        } else if (brand) {
+            tile.innerHTML = `<span class="alt-text">${brand}</span>`;
+        } else {
+            tile.innerHTML = `<span class="alt-text alt-empty">—</span>`;
+        }
+    });
+};
 
-            if (!isProduct) {
-                console.log('Sustainify: Not a product page, skipping analysis');
-                return;
-            }
+const showAlternativesError = () => {
+    cachedAlternatives = { error: true };
+    const tilesContainer = document.querySelector('#sustainify-results .alt-tiles');
+    if (tilesContainer) {
+        tilesContainer.innerHTML = '<div class="alt-error">No similar items found</div>';
+    }
+};
 
-            console.log('Sustainify: Product detected, starting analysis...');
-            const pageText = getPageText();
-            showSnackbar();
+// Main Execution Flow - wrapped in a function for SPA navigation support
+const runPageAnalysis = () => {
+    const currentUrl = window.location.href;
 
-            startPipeline(GUMLOOP_ANALYSIS_PIPELINE, pageText, 'Product Content')
-                .then(analysisData => {
-                    console.log('Analysis pipeline started, run_id:', analysisData.run_id);
-                    pollPipeline(analysisData.run_id, (analysisOutputs) => {
-                        console.log('Analysis complete:', analysisOutputs);
+    // Skip if already analyzing or if URL hasn't changed
+    if (isAnalyzing || currentUrl === lastAnalyzedUrl) {
+        console.log('Sustainify: Skipping - already analyzing or same URL');
+        return;
+    }
 
-                        // Smooth finish animation
-                        const currentWidth = window.getComputedStyle(progressBar).width;
-                        progressBar.style.width = currentWidth;
-                        progressBar.style.animation = 'none';
-                        progressBar.offsetHeight; // Force reflow
+    // Remove any existing popup when navigating to new page
+    if (cachedPopup) {
+        cachedPopup.remove();
+        cachedPopup = null;
+        cachedScores = null;
+        cachedJustifications = null;
+    }
 
-                        progressBar.style.transition = 'width 250ms cubic-bezier(0.4, 0, 0.2, 1)'; // Fast zoom to end
-                        progressBar.style.width = '100%';
-                        progressBar.style.borderRight = 'none';
+    console.log('Sustainify: Checking page...', currentUrl);
+    isAnalyzing = true;
+    lastAnalyzedUrl = currentUrl;
 
-                        setTimeout(() => {
-                            snackbar.style.opacity = '0';
-                            snackbar.style.transform = 'translateY(-10px) scale(0.98)';
-                            setTimeout(() => snackbar.remove(), 350);
-                            showResultsPopup(analysisOutputs);
-                        }, 250);
-                    }, err => console.error('Analysis failed:', err));
-                })
-                .catch(err => console.error('Failed to start analysis:', err));
-        }, err => console.error('Detection failed:', err));
-    })
-    .catch(err => console.error('Failed to start detection:', err));
+    startPipeline(GUMLOOP_DETECT_PIPELINE, currentUrl, 'URL')
+        .then(data => {
+            console.log('Detection pipeline started, run_id:', data.run_id);
+            pollPipeline(data.run_id, (outputs) => {
+                console.log('Detection result:', outputs);
+                const isProduct = Object.values(outputs).some(v => v === '1' || v === 1);
+
+                if (!isProduct) {
+                    console.log('Sustainify: Not a product page, skipping analysis');
+                    isAnalyzing = false;
+                    return;
+                }
+
+                console.log('Sustainify: Product detected, starting analysis...');
+                const pageText = getPageText();
+                showSnackbar();
+
+                // Start alternatives pipeline concurrently
+                startPipeline(GUMLOOP_ALTERNATIVES_PIPELINE, pageText, 'scraped_page_data')
+                    .then(altData => {
+                        console.log('Alternatives pipeline started, run_id:', altData.run_id);
+                        pollPipeline(altData.run_id, (altOutputs) => {
+                            console.log('Alternatives complete:', altOutputs);
+
+                            // Parse the JSON output (may be wrapped in markdown code blocks)
+                            let items = {};
+                            try {
+                                const rawOutput = altOutputs.output || '';
+                                const jsonStr = rawOutput.replace(/```json\n?|\n?```/g, '').trim();
+                                items = JSON.parse(jsonStr);
+                            } catch (e) {
+                                console.error('Failed to parse alternatives:', e);
+                            }
+
+                            // Cache alternatives
+                            cachedAlternatives = items;
+
+                            // Populate alt tiles if popup exists
+                            const tiles = document.querySelectorAll('#sustainify-results .alt-tile');
+                            if (tiles.length > 0) {
+                                applyAlternativesToTiles(tiles, items);
+                            }
+                        }, err => {
+                            console.error('Alternatives failed:', err);
+                            showAlternativesError();
+                        });
+                    })
+                    .catch(err => {
+                        console.error('Failed to start alternatives:', err);
+                        showAlternativesError();
+                    });
+
+                // Start analysis pipeline
+                startPipeline(GUMLOOP_ANALYSIS_PIPELINE, pageText, 'Product Content')
+                    .then(analysisData => {
+                        console.log('Analysis pipeline started, run_id:', analysisData.run_id);
+                        pollPipeline(analysisData.run_id, (analysisOutputs) => {
+                            console.log('Analysis complete:', analysisOutputs);
+                            isAnalyzing = false;
+
+                            // Smooth finish animation
+                            const currentWidth = window.getComputedStyle(progressBar).width;
+                            progressBar.style.width = currentWidth;
+                            progressBar.style.animation = 'none';
+                            progressBar.offsetHeight; // Force reflow
+
+                            progressBar.style.transition = 'width 250ms cubic-bezier(0.4, 0, 0.2, 1)'; // Fast zoom to end
+                            progressBar.style.width = '100%';
+                            progressBar.style.borderRight = 'none';
+
+                            setTimeout(() => {
+                                snackbar.style.opacity = '0';
+                                snackbar.style.transform = 'translateY(-10px) scale(0.98)';
+                                setTimeout(() => snackbar.remove(), 350);
+                                showResultsPopup(analysisOutputs);
+                            }, 250);
+                        }, err => { console.error('Analysis failed:', err); isAnalyzing = false; });
+                    })
+                    .catch(err => { console.error('Failed to start analysis:', err); isAnalyzing = false; });
+            }, err => { console.error('Detection failed:', err); isAnalyzing = false; });
+        })
+        .catch(err => { console.error('Failed to start detection:', err); isAnalyzing = false; });
+};
+
+// SPA Navigation Detection - poll for URL changes (most reliable method)
+let lastCheckedUrl = window.location.href;
+
+const checkForUrlChange = () => {
+    const currentUrl = window.location.href;
+    if (currentUrl !== lastCheckedUrl) {
+        console.log('Sustainify: URL change detected', lastCheckedUrl, '->', currentUrl);
+        lastCheckedUrl = currentUrl;
+
+        // Dismiss popup when leaving the page
+        if (cachedPopup) {
+            cachedPopup.style.opacity = '0';
+            cachedPopup.style.transform = 'translateY(-12px) scale(0.96)';
+            setTimeout(() => {
+                cachedPopup.remove();
+                cachedPopup = null;
+                cachedScores = null;
+                cachedJustifications = null;
+                cachedAlternatives = null;
+                cachedCategory = null;
+            }, 400);
+        }
+
+        // Delay slightly to let page content load
+        setTimeout(runPageAnalysis, 300);
+    }
+};
+
+// Poll for URL changes every 500ms
+setInterval(checkForUrlChange, 500);
+
+// Also listen for popstate (back/forward buttons)
+window.addEventListener('popstate', () => {
+    console.log('Sustainify: popstate detected');
+    setTimeout(checkForUrlChange, 100);
+});
+
+// Run on initial page load
+runPageAnalysis();
 
 // UI Render Logic
 const rerenderAnalysisPanel = (popup, scores, justifications) => {
@@ -360,6 +535,8 @@ const rerenderAnalysisPanel = (popup, scores, justifications) => {
     const suggestedSection = popup.querySelector('.suggested-section');
     if (suggestedSection) suggestedSection.style.borderTopColor = t.border;
 
+
+
     // Rerender Charts with correct score based on personal view state
     const gaugeContainer = popup.querySelector('.gauge-container');
     if (gaugeContainer) gaugeContainer.innerHTML = renderGaugeChart(displayScore, isDark, t, personalViewActive);
@@ -369,7 +546,7 @@ const rerenderAnalysisPanel = (popup, scores, justifications) => {
 
     // Update Styles
     const styleTag = popup.querySelector('style');
-    if (styleTag) styleTag.textContent = getPopupStyles(t);
+    if (styleTag) styleTag.textContent = getPopupStyles(t, isDark);
 
     // Reattach hover listeners since radar chart was replaced
     setupTooltipListeners(popup, scores, justifications);
@@ -392,6 +569,7 @@ const showResultsPopup = (outputs) => {
 
     cachedScores = scores;
     cachedJustifications = justifications;
+    cachedCategory = outputs['category'] || outputs['Category'] || '';
 
     chrome.storage.sync.get(['darkMode'], prefs => {
         currentDarkMode = prefs.darkMode ?? false;
@@ -405,9 +583,17 @@ const showResultsPopup = (outputs) => {
         const suggestedSection = `
             <div class="suggested-section">
                 <div class="suggested-header">Suggested Alternatives</div>
-                <div class="suggested-empty">Coming soon...</div>
+                <div class="alt-tiles">
+                    <div class="alt-tile loading"><div class="shimmer"></div></div>
+                    <div class="alt-tile loading"><div class="shimmer"></div></div>
+                    <div class="alt-tile loading"><div class="shimmer"></div></div>
+                </div>
             </div>
         `;
+
+        const stashBtn = document.createElement('button');
+        stashBtn.className = 'stash-btn';
+        stashBtn.innerHTML = `<span class="stash-text">Save to Stash</span>`;
 
         const tooltip = document.createElement('div');
         tooltip.className = 'chart-tooltip';
@@ -432,13 +618,13 @@ const showResultsPopup = (outputs) => {
             <div class="radar-container">${renderRadarChart(scores, isDark, t)}</div>
             ${suggestedSection}
         `;
-        popup.append(tooltip, themeBtn, homeBtn, closeBtn);
+        popup.append(tooltip, themeBtn, homeBtn, closeBtn, stashBtn);
 
         // --- Styles & Events ---
 
         // Styles injection
         const styleTag = document.createElement('style');
-        styleTag.textContent = getPopupStyles(t); // See helper below
+        styleTag.textContent = getPopupStyles(t, isDark); // See helper below
         popup.appendChild(styleTag);
 
         Object.assign(popup.style, {
@@ -482,6 +668,36 @@ const showResultsPopup = (outputs) => {
 
         homeBtn.addEventListener('click', () => {
             window.open(chrome.runtime.getURL('dashboard.html'), '_blank');
+        });
+
+
+        stashBtn.addEventListener('click', () => {
+            if (stashBtn.classList.contains('saved')) return;
+
+            const productName = document.title || 'Unknown Product';
+            const productUrl = window.location.href;
+            const avgScore = Math.round((scores.environmental + scores.health + scores.resource + scores.social) / 4);
+            const stashItem = {
+                name: productName,
+                link: productUrl,
+                scores: { ...scores, average: avgScore },
+                type: cachedCategory,
+                timestamp: new Date().toISOString()
+            };
+
+            chrome.storage.sync.get(['stash'], result => {
+                const stash = result.stash ? JSON.parse(result.stash) : [];
+                stash.push(stashItem);
+                chrome.storage.sync.set({ stash: JSON.stringify(stash) }, () => {
+                    stashBtn.classList.add('saved');
+                    stashBtn.innerHTML = `
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        <span class="stash-text">Saved to Stash</span>
+                    `;
+                });
+            });
         });
 
         // Gauge click to toggle personal/green score view
@@ -560,6 +776,17 @@ const showResultsPopup = (outputs) => {
 
         setupTooltipListeners(popup, scores, justifications);
 
+        // Apply cached alternatives if they loaded before the popup
+        if (cachedAlternatives) {
+            if (cachedAlternatives.error) {
+                const tilesContainer = popup.querySelector('.alt-tiles');
+                if (tilesContainer) tilesContainer.innerHTML = '<div class="alt-error">No similar items found</div>';
+            } else {
+                const tiles = popup.querySelectorAll('.alt-tile');
+                applyAlternativesToTiles(tiles, cachedAlternatives);
+            }
+        }
+
         requestAnimationFrame(() => {
             popup.style.opacity = '1';
             popup.style.transform = 'translateY(0) scale(1)';
@@ -607,7 +834,7 @@ const setupTooltipListeners = (popup, scores, justifications) => {
     });
 };
 
-const getPopupStyles = (t) => `
+const getPopupStyles = (t, isDark) => `
     @keyframes arcDraw { from { stroke-dashoffset: 300; } to { stroke-dashoffset: 0; } }
     
     /* Clickable gauge for toggle */
@@ -643,8 +870,108 @@ const getPopupStyles = (t) => `
     #sustainify-results .chart-label:hover .icon-caption { opacity: 1; }
     #sustainify-results .data-polygon { transition: opacity 0.3s ease; }
     #sustainify-results .suggested-section { width: 100%; margin-top: 8px; padding-top: 12px; border-top: 1px solid ${t.border}; }
-    #sustainify-results .suggested-header { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: ${t.accent}; margin-bottom: 8px; }
-    #sustainify-results .suggested-empty { font-size: 12px; color: ${t.muted}; font-style: italic; text-align: center; padding: 12px 0; }
+    #sustainify-results .suggested-header { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: ${t.accent}; margin-bottom: 10px; }
+    
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+    
+    #sustainify-results .alt-tiles {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        width: 100%;
+    }
+    
+    #sustainify-results .alt-tile {
+        width: 100%;
+        height: 24px;
+        border-radius: 8px;
+        background: ${t.card};
+        position: relative;
+        overflow: hidden;
+    }
+    
+    #sustainify-results .alt-tile.loading .shimmer {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+            90deg,
+            transparent 0%,
+            ${t.progressBg} 50%,
+            transparent 100%
+        );
+        animation: shimmer 1.8s infinite ease-in-out;
+    }
+    
+    #sustainify-results .alt-link, #sustainify-results .alt-text {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        font-size: 11px;
+        font-weight: 600;
+        text-decoration: none;
+        color: ${t.text};
+        transition: color 0.2s;
+    }
+    
+    #sustainify-results .alt-link:hover {
+        color: ${t.accent};
+    }
+    
+    #sustainify-results .alt-empty {
+        color: ${t.muted};
+        font-weight: 400;
+    }
+
+    #sustainify-results .alt-error {
+        width: 100%;
+        text-align: center;
+        font-size: 11px;
+        color: ${t.muted};
+        font-style: italic;
+        padding: 8px 0;
+    }
+    
+    #sustainify-results .stash-btn {
+        width: 100%;
+        padding: 11px 16px;
+        margin-top: 12px;
+        background: transparent;
+        color: ${t.accent};
+        border: 1.5px solid ${t.border};
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        font-family: 'Source Serif 4', Georgia, serif;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+    
+    #sustainify-results .stash-btn:hover:not(.saved) {
+        background: ${t.card};
+        border-color: ${t.accent};
+        transform: translateY(-1px);
+    }
+    
+    #sustainify-results .stash-btn:active:not(.saved) {
+        transform: translateY(0);
+    }
+    
+    #sustainify-results .stash-btn.saved {
+        background: ${isDark ? 'hsl(155 30% 18%)' : 'hsl(155 35% 92%)'};
+        border-color: ${t.accent};
+        cursor: default;
+    }
     
     #sustainify-results .chart-tooltip {
         position: absolute; background: ${t.card}; border: 1px solid ${t.border}; border-radius: 10px;
