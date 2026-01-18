@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap"
+        rel="stylesheet">
+    <title>Sustainify Dashboard</title>
+    <style>
+        :root {
+            --card: hsl(145 25% 94%);
+            --border: hsl(145 20% 80%);
+            --accent: hsl(155 40% 28%);
+            --muted: hsl(145 15% 50%);
+            --text: hsl(155 30% 18%);
+            --caption-bg: hsl(155 30% 90%);
+            --shadow: 0 1px 3px hsl(155 20% 50% / 0.25);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #f5faf6 url("backdrops/day3.png") center/cover no-repeat;
+            position: relative;
+        }
+
+        .sun-btn {
+            position: fixed;
+            top: -30px;
+            right: 0px;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            border: none;
+            padding: 0;
+            background: transparent;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            z-index: 1;
+            overflow: visible;
+            isolation: isolate;
+        }
+
+        .sun-btn img {
+            width: 100%;
+            height: 100%;
+            border-radius: 500%;
+            display: block;
+            object-fit: cover;
+            box-shadow:  rgba(0, 0, 0, 0.25);
+        }
+
+        .sun-btn:active {
+            transform: scale(0.98);
+        }
+
+        .backdrop-fade {
+            position: fixed;
+            inset: 0;
+            background: transparent center/cover no-repeat;
+            opacity: 0;
+            transition: opacity 5s ease;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .room-link {
+            position: fixed;
+            width: 24vw;
+            max-width: 280px;
+            min-width: 120px;
+            z-index: 1;
+            overflow: visible;
+            isolation: isolate;
+        }
+
+        .room-link img {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: contain;
+        }
+
+        .sun-btn::after,
+        .room-link::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 6px 10px;
+            border-radius: 10px;
+            background: var(--caption-bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            font: 600 12px/1.1 'Source Serif 4', Georgia, serif;
+            letter-spacing: 0.01em;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            z-index: 2;
+        }
+
+        .sun-btn:hover::after,
+        .room-link:hover::after {
+            opacity: 1;
+        }
+
+        .room-wardrobe {
+            top: calc(36%);
+            left: calc(32%);
+        }
+
+        .room-tech {
+            top: calc(36%);
+            right: calc(33%);
+        }
+
+        .room-kitchen {
+            bottom: calc(18%);
+            left: calc(32%);
+        }
+
+        .room-toys {
+            bottom: calc(18%);
+            right: calc(33%);
+        }
+
+        .score-test {
+            position: fixed;
+            left: 12px;
+            bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 8px;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 8px;
+            font: 12px/1.2 Arial, sans-serif;
+            z-index: 1;
+        }
+
+        .score-test input[type="range"] {
+            width: 140px;
+        }
+    </style>
+</head>
+<body data-backdrop="day3">
+    <div class="backdrop-fade" id="backdrop-fade" aria-hidden="true"></div>
+
+    <a class="room-link room-wardrobe" href="wardrobe.html" aria-label="Wardrobe" data-tooltip="Access Wardrobe">
+        <img src="backdrops/wardrobe.png" alt="">
+    </a>
+    <a class="room-link room-tech" href="technology.html" aria-label="Technology" data-tooltip="Access Technology">
+        <img src="backdrops/technology.png" alt="">
+    </a>
+    <a class="room-link room-kitchen" href="kitchen.html" aria-label="Kitchen" data-tooltip="Access Kitchen">
+        <img src="backdrops/kitchen.png" alt="">
+    </a>
+    <a class="room-link room-toys" href="toys.html" aria-label="Toys" data-tooltip="Access Toys">
+        <img src="backdrops/toys.png" alt="">
+    </a>
+
+    <button class="sun-btn" id="sun-toggle" aria-label="Switch to night" data-tooltip="Toggle Theme">
+        <img src="backdrops/toys.png" alt="" aria-hidden="true" id="toggle-icon">
+    </button>
+
+    <div class="score-test">
+        <label for="score-input">Score</label>
+        <input id="score-input" type="range" min="1" max="100" value="50">
+        <span id="score-value">50</span>
+    </div>
+
+    <script>
+        const body = document.body;
+        const toggleBtn = document.getElementById("sun-toggle");
+        const toggleIcon = document.getElementById("toggle-icon");
+        const backdropFade = document.getElementById("backdrop-fade");
+        const scoreInput = document.getElementById("score-input");
+        const scoreValue = document.getElementById("score-value");
+        let fadeTimer = null;
+
+        const setBackdrop = (name) => {
+            const imageUrl = `backdrops/${name}.png`;
+            body.dataset.backdrop = name;
+            backdropFade.style.transition = "none";
+            backdropFade.style.opacity = "0";
+            backdropFade.style.background = `#f5faf6 url("${imageUrl}") center/cover no-repeat`;
+            backdropFade.offsetHeight;
+            backdropFade.style.transition = "opacity 5s ease";
+            backdropFade.style.opacity = "1";
+
+            if (fadeTimer) {
+                clearTimeout(fadeTimer);
+            }
+
+            fadeTimer = setTimeout(() => {
+                body.style.background = `#f5faf6 url("${imageUrl}") center/cover no-repeat`;
+                backdropFade.style.transition = "none";
+                backdropFade.style.opacity = "0";
+            }, 3000);
+        };
+
+        const parseBackdrop = () => {
+            const match = (body.dataset.backdrop || "").match(/^(day|night)(\d)$/);
+            if (!match) {
+                return { mode: "day", index: "3" };
+            }
+            return { mode: match[1], index: match[2] };
+        };
+
+        const getBackdropForScore = (score, mode) => {
+            if (!Number.isFinite(score)) {
+                return null;
+            }
+
+            let index = 1;
+            if (score >= 85) {
+                index = 5;
+            } else if (score >= 60) {
+                index = 4;
+            } else if (score >= 50) {
+                index = 3;
+            } else if (score >= 40) {
+                index = 2;
+            }
+
+            return `${mode}${index}`;
+        };
+
+        const updateToggleLabel = (mode) => {
+            toggleBtn.setAttribute(
+                "aria-label",
+                mode === "day" ? "Switch to night" : "Switch to day"
+            );
+        };
+
+        const updateToggleIcon = (mode) => {
+            toggleIcon.src = mode === "day"
+                ? "backdrops/sun.png"
+                : "backdrops/moon.png";
+        };
+
+        toggleBtn.addEventListener("click", () => {
+            const { mode, index } = parseBackdrop();
+            const nextMode = mode === "day" ? "night" : "day";
+            setBackdrop(`${nextMode}${index}`);
+            updateToggleLabel(nextMode);
+            updateToggleIcon(nextMode);
+        });
+
+        const applyScoreBackdrop = () => {
+            const mode = parseBackdrop().mode;
+            const backdrop = getBackdropForScore(Number(scoreInput.value), mode);
+            if (!backdrop) {
+                return;
+            }
+            setBackdrop(backdrop);
+            updateToggleLabel(mode);
+            updateToggleIcon(mode);
+        };
+
+        scoreInput.addEventListener("input", () => {
+            scoreValue.textContent = scoreInput.value;
+            applyScoreBackdrop();
+        });
+
+        const initialMode = parseBackdrop().mode;
+        updateToggleLabel(initialMode);
+        updateToggleIcon(initialMode);
+    </script>
+</body>
+</html>
+
