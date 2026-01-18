@@ -24,7 +24,12 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "dashboard.html"
+        "dashboard.html",
+        "quirkydashboard.html",
+        "wardrobe.html",
+        "kitchen.html",
+        "technology.html",
+        "toys.html"
       ],
       "matches": [
         "<all_urls>"

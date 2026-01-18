@@ -3,19 +3,25 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
     <title>Wardrobe</title>
     <style>
         :root {
             color-scheme: light;
-            font-family: "Source Serif 4", Georgia, serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            margin: 0;
             min-height: 100vh;
             background: url("backdrops/wardrobeBackdrop.png") center / cover no-repeat fixed;
+            font-family: "Source Serif 4", Georgia, serif;
             display: flex;
-            align-items: flex-end;
+            align-items: center;
             justify-content: center;
         }
 
@@ -24,55 +30,52 @@
             top: 16px;
             left: 16px;
             z-index: 5;
-            padding: 8px 12px;
-            background: rgba(255, 255, 255, 0.85);
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.9);
             border-radius: 999px;
             color: #4b2f1e;
             text-decoration: none;
             font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
         }
 
-        .closet-floor {
-            position: relative;
-            width: min(860px, 86vw);
-            height: min(260px, 30vh);
-            margin-bottom: 48px;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            pointer-events: none;
-        }
-
-        .stack-grid {
+        .clothes-center {
             display: flex;
             flex-wrap: wrap;
-            gap: 16px;
-            align-items: flex-end;
+            gap: 20px;
+            align-items: center;
             justify-content: center;
-            width: 100%;
-            pointer-events: auto;
+            max-width: 600px;
+            padding: 24px;
         }
 
         .folded-stack {
-            --stack-base: #d7c0a3;
-            --stack-mid: #c3a684;
-            --stack-dark: #a98660;
-            width: 130px;
-            min-height: 48px;
-            padding: 10px 12px 12px;
-            border-radius: 10px;
+            --stack-base: #7cb87c;
+            --stack-mid: #5a9a5a;
+            --stack-dark: #3d7a3d;
+            width: 140px;
+            min-height: 54px;
+            padding: 12px 14px 14px;
+            border-radius: 12px;
             background: var(--stack-base);
-            color: #3b2a1f;
-            text-decoration: none;
+            color: #fff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
             font-size: 0.85rem;
             font-weight: 600;
             text-align: center;
-            line-height: 1.2;
+            line-height: 1.25;
+            cursor: pointer;
+            border: none;
             box-shadow:
                 0 6px 0 var(--stack-mid),
                 0 12px 0 var(--stack-dark),
-                0 16px 18px rgba(0, 0, 0, 0.25);
+                0 16px 20px rgba(0, 0, 0, 0.25);
             transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
 
@@ -81,31 +84,186 @@
             box-shadow:
                 0 6px 0 var(--stack-mid),
                 0 12px 0 var(--stack-dark),
-                0 18px 22px rgba(0, 0, 0, 0.28);
+                0 20px 26px rgba(0, 0, 0, 0.3);
+        }
+
+        .folded-stack:active {
+            transform: translateY(-2px);
         }
 
         .empty-state {
             color: #3f2a1c;
             font-weight: 600;
-            padding: 12px 16px;
-            background: rgba(255, 255, 255, 0.85);
-            border-radius: 10px;
-            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
-            pointer-events: auto;
+            padding: 16px 24px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            text-align: center;
+        }
+
+        /* T-Shirt Modal */
+        .tshirt-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            place-items: center;
+            z-index: 100;
+            -webkit-backdrop-filter: blur(4px);
+            backdrop-filter: blur(4px);
+        }
+
+        .tshirt-modal.open {
+            display: grid;
+        }
+
+        .tshirt-shape {
+            --shirt-color: #7cb87c;
+            position: relative;
+            width: 320px;
+            filter: drop-shadow(0 12px 24px rgba(0,0,0,0.3));
+            animation: shirtAppear 0.3s ease;
+        }
+
+        @keyframes shirtAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.85) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .tshirt-svg {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .tshirt-content {
+            position: absolute;
+            top: 38%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 65%;
+            text-align: center;
+            color: #fff;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.25);
+        }
+
+        .tshirt-score {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+
+        .tshirt-name {
+            font-size: 1rem;
+            font-weight: 600;
+            line-height: 1.3;
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .tshirt-date {
+            font-size: 0.75rem;
+            opacity: 0.85;
+            margin-bottom: 12px;
+        }
+
+        .tshirt-link {
+            display: inline-block;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.95);
+            color: var(--shirt-color);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            border-radius: 999px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .tshirt-link:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 8%;
+            right: 18%;
+            width: 32px;
+            height: 32px;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            border-radius: 50%;
+            font-size: 1.25rem;
+            cursor: pointer;
+            color: #555;
+            display: grid;
+            place-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            transition: transform 0.15s;
+        }
+
+        .modal-close:hover {
+            transform: scale(1.1);
         }
     </style>
 </head>
 <body>
     <a class="back-btn" href="quirkydashboard.html">← Back</a>
 
-    <div class="closet-floor" aria-live="polite">
-        <div class="stack-grid" id="stack-grid"></div>
+    <div class="clothes-center" id="clothes-center" aria-live="polite">
         <div class="empty-state" id="empty-state">No clothing items yet.</div>
     </div>
 
+    <!-- T-Shirt Modal -->
+    <div class="tshirt-modal" id="tshirt-modal">
+        <div class="tshirt-shape" id="tshirt-shape">
+            <svg class="tshirt-svg" viewBox="0 0 200 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path id="shirt-path" d="M40 0 L80 0 Q100 25 120 0 L160 0 L200 50 L170 70 L160 55 L160 220 L40 220 L40 55 L30 70 L0 50 Z" fill="#7cb87c"/>
+            </svg>
+            <button class="modal-close" id="modal-close">×</button>
+            <div class="tshirt-content">
+                <div class="tshirt-score" id="modal-score">85</div>
+                <div class="tshirt-name" id="modal-name">Product Name</div>
+                <div class="tshirt-date" id="modal-date">Jan 18, 2026</div>
+                <a class="tshirt-link" id="modal-link" href="#" target="_blank">View Product →</a>
+            </div>
+        </div>
+    </div>
+
     <script>
-        const grid = document.getElementById('stack-grid');
+        const container = document.getElementById('clothes-center');
         const emptyState = document.getElementById('empty-state');
+        const modal = document.getElementById('tshirt-modal');
+        const tshirtShape = document.getElementById('tshirt-shape');
+        const shirtPath = document.getElementById('shirt-path');
+        const modalScore = document.getElementById('modal-score');
+        const modalName = document.getElementById('modal-name');
+        const modalDate = document.getElementById('modal-date');
+        const modalLink = document.getElementById('modal-link');
+        const modalClose = document.getElementById('modal-close');
+
+        // Get color based on sustainability score (0-100)
+        // Low score = red/orange, high score = green
+        const getScoreColor = (score) => {
+            if (score >= 80) return '#4caf50'; // Bright green
+            if (score >= 65) return '#7cb87c'; // Medium green
+            if (score >= 50) return '#a0c46c'; // Yellow-green
+            if (score >= 35) return '#e8a948'; // Orange
+            return '#d65a4a'; // Red-orange
+        };
 
         const shade = (hex, amt) => {
             const num = parseInt(hex.slice(1), 16);
@@ -116,16 +274,67 @@
             return `#${[r, g, b].map(v => v.toString(16).padStart(2, '0')).join('')}`;
         };
 
-        const palette = ['#d7c0a3', '#cbb8a3', '#d9b8a8', '#e0c1a4', '#c8b2a1'];
+        const formatDate = (iso) => {
+            const d = new Date(iso);
+            return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        };
 
         const isClothing = (item) => {
             const type = (item.type || '').toLowerCase();
-            return type.includes('clothing') || type.includes('cloth') || type.includes('apparel');
+            const name = (item.name || '').toLowerCase();
+            // Match clothing-related types
+            const typeMatch = ['cloth', 'shoe', 'wear', 'apparel', 'fashion', 'shirt', 'pant', 'dress', 'garment', 'textile', 'jacket', 'coat', 'sweater', 'hoodie', 'jeans', 'shorts', 'skirt', 'blouse', 'top', 't-shirt', 'socks', 'underwear']
+                .some(keyword => type.includes(keyword));
+            // Also match by name
+            const nameMatch = ['shirt', 'pant', 'dress', 'shoe', 'jacket', 'coat', 'sweater', 'hoodie', 'jeans', 'shorts', 'skirt', 'blouse', 'socks']
+                .some(keyword => name.includes(keyword));
+            return typeMatch || nameMatch;
         };
 
-        const renderStacks = (stash) => {
-            const clothing = stash.filter(isClothing);
-            grid.innerHTML = '';
+        const openModal = (item) => {
+            const score = item.scores?.average || 0;
+            const color = getScoreColor(score);
+
+            shirtPath.setAttribute('fill', color);
+            tshirtShape.style.setProperty('--shirt-color', color);
+
+            modalScore.textContent = score;
+            modalName.textContent = item.name || 'Clothing Item';
+            modalDate.textContent = formatDate(item.timestamp);
+
+            if (item.link) {
+                modalLink.href = item.link;
+                modalLink.style.display = 'inline-block';
+            } else {
+                modalLink.style.display = 'none';
+            }
+
+            modal.classList.add('open');
+        };
+
+        const closeModal = () => {
+            modal.classList.remove('open');
+        };
+
+        modalClose.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('open')) {
+                closeModal();
+            }
+        });
+
+        const renderClothes = (stash) => {
+            // Filter to clothing, take 6 most recent
+            const clothing = stash
+                .filter(isClothing)
+                .slice(-6)
+                .reverse(); // Most recent first
+
+            // Clear existing stacks (but not empty state)
+            container.querySelectorAll('.folded-stack').forEach(el => el.remove());
 
             if (clothing.length === 0) {
                 emptyState.style.display = 'block';
@@ -133,32 +342,48 @@
             }
 
             emptyState.style.display = 'none';
-            clothing.forEach((item, index) => {
-                const base = palette[index % palette.length];
-                const stack = document.createElement('a');
+
+            clothing.forEach((item) => {
+                const score = item.scores?.average || 50;
+                const baseColor = getScoreColor(score);
+
+                const stack = document.createElement('button');
                 stack.className = 'folded-stack';
-                stack.href = item.link || '#';
-                stack.target = item.link ? '_blank' : '_self';
-                stack.rel = item.link ? 'noopener' : '';
-                stack.style.setProperty('--stack-base', base);
-                stack.style.setProperty('--stack-mid', shade(base, -18));
-                stack.style.setProperty('--stack-dark', shade(base, -36));
+                stack.style.setProperty('--stack-base', baseColor);
+                stack.style.setProperty('--stack-mid', shade(baseColor, -25));
+                stack.style.setProperty('--stack-dark', shade(baseColor, -50));
                 stack.textContent = item.name || 'Clothing Item';
-                if (!item.link) {
-                    stack.style.pointerEvents = 'none';
-                }
-                grid.appendChild(stack);
+
+                stack.addEventListener('click', () => openModal(item));
+
+                container.appendChild(stack);
             });
+        };
+
+        const parseStash = (data) => {
+            if (!data) return [];
+            try {
+                return JSON.parse(data);
+            } catch (e) {
+                console.error('Failed to parse stash data:', e);
+                return [];
+            }
         };
 
         const loadStash = () => {
             if (window.chrome && chrome.storage && chrome.storage.sync) {
                 chrome.storage.sync.get(['stash'], result => {
-                    const stash = result.stash ? JSON.parse(result.stash) : [];
-                    renderStacks(stash);
+                    renderClothes(parseStash(result.stash));
+                });
+
+                // Listen for changes
+                chrome.storage.onChanged.addListener((changes, area) => {
+                    if (area === 'sync' && changes.stash) {
+                        renderClothes(parseStash(changes.stash.newValue));
+                    }
                 });
             } else {
-                renderStacks([]);
+                renderClothes([]);
             }
         };
 

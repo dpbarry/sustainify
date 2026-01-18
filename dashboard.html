@@ -18,6 +18,8 @@
             --text: hsl(155 30% 18%);
             --shadow: 0 1px 3px hsl(155 20% 50% / 0.25);
             --shadow-hover: 0 4px 8px hsl(155 25% 40% / 0.2);
+            --flower: hsl(340 70% 65%);
+            --flower-center: hsl(45 90% 60%);
         }
 
         [data-theme="dark"] {
@@ -30,6 +32,8 @@
             --text: hsl(145 20% 90%);
             --shadow: 0 1px 3px hsl(0 0% 0% / 0.4);
             --shadow-hover: 0 6px 12px hsl(0 0% 0% / 0.5);
+            --flower: hsl(340 65% 70%);
+            --flower-center: hsl(45 85% 65%);
         }
 
         * {
@@ -46,13 +50,13 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 2rem 1rem;
+            padding: 2rem 2rem;
             overflow: hidden;
         }
 
         .container {
             width: 100%;
-            max-width: 600px;
+            max-width: 1000px;
             height: 100%;
             display: flex;
             flex-direction: column;
@@ -114,6 +118,104 @@
             margin-top: 0.25rem;
         }
 
+        .main-content {
+            display: flex;
+            gap: 2rem;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .stash-column {
+            flex: 7;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .plant-column {
+            flex: 3;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 2rem;
+        }
+
+        .plant-container {
+            width: 100%;
+            max-width: 220px;
+            height: 380px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .plant-container svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        .plant-stem {
+            stroke: var(--accent);
+            stroke-width: 4;
+            stroke-linecap: round;
+            fill: none;
+        }
+
+        .plant-leaf {
+            fill: var(--accent-soft);
+            transition: opacity 0.3s ease;
+        }
+
+        .plant-bud {
+            fill: var(--accent);
+            transition: opacity 0.3s ease;
+        }
+
+        .plant-flower-petal {
+            fill: var(--flower);
+        }
+
+        .plant-flower-center {
+            fill: var(--flower-center);
+        }
+
+        .sort-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            font-size: 0.8rem;
+        }
+
+        .sort-label {
+            color: var(--muted);
+            font-style: italic;
+        }
+
+        .sort-btn {
+            background: none;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .sort-btn:hover {
+            color: var(--text);
+            background: var(--card);
+        }
+
+        .sort-btn.active {
+            color: var(--accent);
+            background: var(--bg);
+            box-shadow: var(--shadow);
+        }
+
         .stash-list {
             display: flex;
             flex-direction: column;
@@ -121,7 +223,6 @@
             flex: 1;
             overflow-y: auto;
             padding-right: 6px;
-            margin-bottom: 1rem;
         }
 
         .stash-list::-webkit-scrollbar {
@@ -139,6 +240,10 @@
 
         .stash-list::-webkit-scrollbar-thumb:hover {
             background-color: var(--muted);
+        }
+
+        .stash-row {
+            position: relative;
         }
 
         .stash-item {
@@ -221,42 +326,6 @@
             transform: translateY(-50%) scale(1.1);
         }
 
-        .sort-controls {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 12px;
-            font-size: 0.8rem;
-        }
-
-        .sort-label {
-            color: var(--muted);
-            font-style: italic;
-        }
-
-        .sort-btn {
-            background: none;
-            border: none;
-            color: var(--muted);
-            cursor: pointer;
-            font-family: inherit;
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 6px;
-            transition: all 0.2s;
-        }
-
-        .sort-btn:hover {
-            color: var(--text);
-            background: var(--card);
-        }
-
-        .sort-btn.active {
-            color: var(--accent);
-            background: var(--bg);
-            box-shadow: var(--shadow);
-        }
-
         .category-header {
             font-size: 0.75rem;
             text-transform: uppercase;
@@ -283,9 +352,9 @@
 
         .footer-actions {
             display: flex;
-            justify-content: center;
+            justify-content: flex-start;
             gap: 1.5rem;
-            margin-top: 2rem;
+            margin-top: 1rem;
             padding-top: 1rem;
             border-top: 1px solid var(--border);
         }
@@ -303,6 +372,42 @@
 
         .footer-action:hover {
             color: var(--accent);
+        }
+
+        .debug-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 60px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+
+        .debug-slider:hover {
+            opacity: 1;
+        }
+
+        .debug-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 10px;
+            height: 10px;
+            background: var(--muted);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .debug-slider::-moz-range-thumb {
+            width: 10px;
+            height: 10px;
+            background: var(--muted);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -336,19 +441,27 @@
             <div class="label">Average Score</div>
         </div>
 
-        <div class="sort-controls">
-            <span class="sort-label">Sort by:</span>
-            <button class="sort-btn active" data-sort="recency">Recency</button>
-            <button class="sort-btn" data-sort="category">Category</button>
-        </div>
-
-        <div class="stash-list" id="stash-list">
-            <div class="empty">No items stashed yet</div>
-        </div>
-
-        <div class="footer-actions">
-            <button class="footer-action" id="btn-clear">Clear Stash</button>
-            <button class="footer-action" id="btn-quirky">Quirky Theme</button>
+        <div class="main-content">
+            <div class="stash-column">
+                <div class="sort-controls">
+                    <span class="sort-label">Sort by:</span>
+                    <button class="sort-btn active" data-sort="recency">Recency</button>
+                    <button class="sort-btn" data-sort="category">Category</button>
+                </div>
+                <div class="stash-list" id="stash-list">
+                    <div class="empty">No items stashed yet</div>
+                </div>
+                <div class="footer-actions">
+                    <button class="footer-action" id="btn-clear">Clear Stash</button>
+                    <button class="footer-action" id="btn-quirky">Quirky Theme</button>
+                    <input type="range" class="debug-slider" id="debug-score" min="0" max="100" value="0" title="Test score">
+                </div>
+            </div>
+            <div class="plant-column">
+                <div class="plant-container" id="growth-plant" aria-label="Sustainability growth plant">
+                    <!-- Plant SVG will be generated by JS -->
+                </div>
+            </div>
         </div>
     </div>
     <script src="dashboard.js"></script>
