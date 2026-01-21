@@ -16,7 +16,7 @@ fontLink.rel = 'stylesheet';
 fontLink.href = 'https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400;1,8..60,600&display=swap';
 document.head.appendChild(fontLink);
 
-// --- Constants & Config ---
+
 
 const GUMLOOP_USER_ID = '0tRVlm6oZphK1PR9l7aZKbtm6F03';
 const GUMLOOP_API_KEY = '42e34acecabd4bb8ba6836ed7d7fbdce';
@@ -24,7 +24,6 @@ const GUMLOOP_DETECT_PIPELINE = 'iEffyHGNXYf3bgPeV1epnH';
 const GUMLOOP_ANALYSIS_PIPELINE = '1gnnojPMpuoQKtPvxbjrNX';
 const GUMLOOP_ALTERNATIVES_PIPELINE = '4vnG2foJZQrAfR5n4kWwPo';
 
-// Track last analyzed URL to avoid duplicate runs
 let lastAnalyzedUrl = null;
 let isAnalyzing = false;
 let cachedAlternatives = null;
@@ -40,56 +39,27 @@ const ICONS_SVG = {
     home: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`
 };
 
-// Personal view toggle state
 let personalViewActive = false;
 let cachedUserWeights = { environment: 1.25, social: 1.25, resources: 1.25, health: 1.25 };
 
-// Slider value (0-4) to weight (0.5-1.5)
 const sliderToWeight = v => 0.5 + (v / 4);
 
-// Calculate personal score: improved weighting with pivot at 65
-// Scores < 65: High importance = PENALTY, Low importance = BOOST
-// Scores > 65: High importance = BOOST, Low importance = DAMPEN
 const calculatePersonalScore = (scores, weights) => {
-    const PIVOT = 85; // Harsh pivot: everything below 85 is considered 'lacking'
-    const AMPLIFICATION = 3.0; // Very powerful weighting effect
+    const PIVOT = 85;
+    const AMPLIFICATION = 3.0;
 
     const getWeightedScore = (score, weight) => {
-        // Amplify the deviation of the weight from 1.0
         const effectiveWeightDelta = (weight - 1) * AMPLIFICATION;
-        // Effective weight for calculation = 1 + delta
-        // e.g. Weight 1.5 -> Delta 0.5 -> Amp 1.25 -> Eff 2.25
-        // e.g. Weight 0.5 -> Delta -0.5 -> Amp -1.25 -> Eff -0.25 (Capped at 0 logic below handles this implicitly?)
 
         let multiplier;
         if (score >= PIVOT) {
-            // Scale from 1.0 at Pivot to `effectiveWeight` at 100
-            // Formula: 1 + (W_eff - 1) * progress
-            // (W_eff - 1) is simply effectiveWeightDelta
             const progress = (score - PIVOT) / (100 - PIVOT);
             multiplier = 1 + effectiveWeightDelta * progress;
         } else {
-            // Scale from 1.0 at Pivot
-            // If High Importance (Delta > 0): Penalty.
-            // Formula was: 1 + (1 - W) * progress... wait.
-            // Let's stick to the Delta mental model.
-            // We want Multiplier to go DOWN if Delta is Positive (High Importance)
-            // We want Multiplier to go UP if Delta is Negative (Low Importance)
-
-            // At Pivot, multiplier is 1.
-            // At 0, we want max effect.
-
-            // Standard Linear Interpolation:
-            // Multiplier = 1 - (effectiveWeightDelta * progress)
-            // Check:
-            // High Imp (Delta +1.25). Progress 1 (Score 0). Mult = 1 - 1.25 = -0.25. (Clamp to 0).
-            // Low Imp (Delta -1.25). Progress 1 (Score 0). Mult = 1 - (-1.25) = 2.25. (Big Boost).
-
             const progress = (PIVOT - score) / PIVOT;
             multiplier = 1 - (effectiveWeightDelta * progress);
         }
 
-        // Safety clamp for multiplier to prevent negative scores
         multiplier = Math.max(0, multiplier);
 
         return score * multiplier;
@@ -145,7 +115,7 @@ const THEMES = {
     }
 };
 
-// --- Helper Functions ---
+
 
 const polarToCartesian = (cx, cy, r, angle) => {
     const rad = (angle - 90) * Math.PI / 180;
@@ -160,10 +130,9 @@ const describeArc = (cx, cy, r, startA, endA) => {
 };
 
 const getScoreColor = (score, isDark) => {
-    // Hue spectrum: 0 = red (0°), 50 = yellow (55°), 100 = sage green (130°)
     const hue = score <= 50
-        ? (score / 50) * 55           // 0→55 for scores 0→50
-        : 55 + ((score - 50) / 50) * 75; // 55→130 for scores 50→100
+        ? (score / 50) * 55
+        : 55 + ((score - 50) / 50) * 75;
     const saturation = 55;
     const lightness = isDark ? 50 : 45;
     return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
@@ -274,15 +243,13 @@ const renderRadarChart = (scores, isDark, t) => {
     `;
 };
 
-// --- Application Logic ---
 
-// Track state
+
 let currentDarkMode = false;
 let cachedScores = null;
 let cachedJustifications = null;
 let cachedPopup = null;
 
-// UI Elements (created once and reused/appended)
 const snackbar = document.createElement('div');
 snackbar.id = 'loading-snackbar';
 const progressBar = document.createElement('div');
@@ -355,17 +322,14 @@ const showAlternativesError = () => {
     }
 };
 
-// Main Execution Flow - wrapped in a function for SPA navigation support
 const runPageAnalysis = () => {
     const currentUrl = window.location.href;
 
-    // Skip if already analyzing or if URL hasn't changed
     if (isAnalyzing || currentUrl === lastAnalyzedUrl) {
         console.log('Sustainify: Skipping - already analyzing or same URL');
         return;
     }
 
-    // Remove any existing popup when navigating to new page
     if (cachedPopup) {
         cachedPopup.remove();
         cachedPopup = null;
@@ -394,14 +358,11 @@ const runPageAnalysis = () => {
                 const pageText = getPageText();
                 showSnackbar();
 
-                // Start alternatives pipeline concurrently
                 startPipeline(GUMLOOP_ALTERNATIVES_PIPELINE, pageText, 'scraped_page_data')
                     .then(altData => {
                         console.log('Alternatives pipeline started, run_id:', altData.run_id);
                         pollPipeline(altData.run_id, (altOutputs) => {
                             console.log('Alternatives complete:', altOutputs);
-
-                            // Parse the JSON output (may be wrapped in markdown code blocks)
                             let items = {};
                             try {
                                 const rawOutput = altOutputs.output || '';
@@ -410,11 +371,7 @@ const runPageAnalysis = () => {
                             } catch (e) {
                                 console.error('Failed to parse alternatives:', e);
                             }
-
-                            // Cache alternatives
                             cachedAlternatives = items;
-
-                            // Populate alt tiles if popup exists
                             const tiles = document.querySelectorAll('#sustainify-results .alt-tile');
                             if (tiles.length > 0) {
                                 applyAlternativesToTiles(tiles, items);
@@ -429,7 +386,6 @@ const runPageAnalysis = () => {
                         showAlternativesError();
                     });
 
-                // Start analysis pipeline
                 startPipeline(GUMLOOP_ANALYSIS_PIPELINE, pageText, 'Product Content')
                     .then(analysisData => {
                         console.log('Analysis pipeline started, run_id:', analysisData.run_id);
@@ -437,13 +393,12 @@ const runPageAnalysis = () => {
                             console.log('Analysis complete:', analysisOutputs);
                             isAnalyzing = false;
 
-                            // Smooth finish animation
                             const currentWidth = window.getComputedStyle(progressBar).width;
                             progressBar.style.width = currentWidth;
                             progressBar.style.animation = 'none';
-                            progressBar.offsetHeight; // Force reflow
+                            progressBar.offsetHeight;
 
-                            progressBar.style.transition = 'width 250ms cubic-bezier(0.4, 0, 0.2, 1)'; // Fast zoom to end
+                            progressBar.style.transition = 'width 250ms cubic-bezier(0.4, 0, 0.2, 1)';
                             progressBar.style.width = '100%';
                             progressBar.style.borderRight = 'none';
 
@@ -461,7 +416,6 @@ const runPageAnalysis = () => {
         .catch(err => { console.error('Failed to start detection:', err); isAnalyzing = false; });
 };
 
-// SPA Navigation Detection - poll for URL changes (most reliable method)
 let lastCheckedUrl = window.location.href;
 
 const checkForUrlChange = () => {
@@ -470,7 +424,6 @@ const checkForUrlChange = () => {
         console.log('Sustainify: URL change detected', lastCheckedUrl, '->', currentUrl);
         lastCheckedUrl = currentUrl;
 
-        // Dismiss popup when leaving the page
         if (cachedPopup) {
             cachedPopup.style.opacity = '0';
             cachedPopup.style.transform = 'translateY(-12px) scale(0.96)';
@@ -484,24 +437,19 @@ const checkForUrlChange = () => {
             }, 400);
         }
 
-        // Delay slightly to let page content load
         setTimeout(runPageAnalysis, 300);
     }
 };
 
-// Poll for URL changes every 500ms
 setInterval(checkForUrlChange, 500);
 
-// Also listen for popstate (back/forward buttons)
 window.addEventListener('popstate', () => {
     console.log('Sustainify: popstate detected');
     setTimeout(checkForUrlChange, 100);
 });
 
-// Run on initial page load
 runPageAnalysis();
 
-// UI Render Logic
 const rerenderAnalysisPanel = (popup, scores, justifications) => {
     if (!popup) return;
     const isDark = currentDarkMode;

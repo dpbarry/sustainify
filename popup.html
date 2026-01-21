@@ -17,8 +17,8 @@
             --text: hsl(155 30% 18%);
             --caption-bg: hsl(155 30% 90%);
             --shadow: 0 1px 3px hsl(155 20% 50% / 0.25);
-            --shadow-hover: 0 4px 8px hsl(155 25% 40% / 0.2);
-            --shadow-thumb: 0 2px 6px hsl(155 40% 30% / 0.3);
+            --shadow-hover: 0 2px 4px hsl(155 25% 40% / 0.2);
+            --shadow-thumb: 0 0 5px hsl(155 40% 30% / 0.3);
         }
 
         [data-theme="dark"] {
@@ -32,8 +32,8 @@
             --text: hsl(145 20% 90%);
             --caption-bg: hsl(155 20% 18%);
             --shadow: 0 1px 3px hsl(0 0% 0% / 0.4), inset 0 1px 0 hsl(155 20% 20%);
-            --shadow-hover: 0 6px 12px hsl(0 0% 0% / 0.5), inset 0 1px 0 hsl(155 20% 22%);
-            --shadow-thumb: 0 2px 8px hsl(155 50% 40% / 0.4);
+            --shadow-hover: 0 2px 4px hsl(0 0% 0% / 0.5), inset 0 1px 0 hsl(155 20% 22%);
+            --shadow-thumb: 0 0 5px hsl(155 50% 40% / 0.4);
         }
 
         * {
@@ -128,7 +128,7 @@
         }
 
         .setting:hover {
-            transform: translateY(-2px);
+            transform: translateY(-0.5px);
             box-shadow: var(--shadow-hover);
         }
 

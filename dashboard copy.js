@@ -1,42 +1,7 @@
-const themeBtn = document.getElementById('btn-theme');
-const iconSun = themeBtn.querySelector('.icon-sun');
-const iconMoon = themeBtn.querySelector('.icon-moon');
 const plantEl = document.getElementById('growth-plant');
-
 let currentScore = 0;
 
-const setTheme = (dark) => {
-    const theme = dark ? 'dark' : 'light';
-    document.body.dataset.theme = theme;
-    iconSun.style.display = dark ? 'block' : 'none';
-    iconMoon.style.display = dark ? 'none' : 'block';
-
-    // Trigger re-render of plant if it exists
-    if (typeof updatePlantGrowth === 'function') {
-        updatePlantGrowth(currentScore, true);
-    }
-};
-
-chrome.storage.sync.get(['darkMode'], prefs => {
-    setTheme(prefs.darkMode ?? false);
-});
-
-themeBtn.addEventListener('click', () => {
-    const isDark = document.body.dataset.theme === 'dark';
-    setTheme(!isDark);
-    chrome.storage.sync.set({ darkMode: !isDark });
-});
-
-chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'sync' && changes.darkMode) {
-        setTheme(changes.darkMode.newValue);
-    }
-});
-
-const formatDate = (iso) => {
-    const d = new Date(iso);
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-};
+document.body.dataset.theme = 'light';
 
 class PlantRenderer {
     constructor(element, skipAnimation = false) {
@@ -544,257 +509,24 @@ const updatePlantGrowth = (avgScore, skipAnimation = false) => {
     }
 };
 
-let currentSort = 'recency';
+updatePlantGrowth(0, true);
 
-const renderStash = () => {
-    chrome.storage.sync.get(['stash'], result => {
-        const stash = result.stash ? JSON.parse(result.stash) : [];
-        console.log('Sustainify Stash:', stash);
-
-        const listEl = document.getElementById('stash-list');
-        const avgEl = document.getElementById('avg-number');
-
-        if (stash.length === 0) {
-            listEl.innerHTML = '<div class="empty">No items stashed yet</div>';
-            avgEl.textContent = '--';
-            updatePlantGrowth(0);
-            return;
+setTimeout(() => {
+    const incrementInterval = setInterval(() => {
+        currentScore = Math.min(100, currentScore + 1);
+        updatePlantGrowth(currentScore, true);
+        
+        if (currentScore >= 100) {
+            clearInterval(incrementInterval);
         }
-
-        const totalAvg = Math.round(stash.reduce((sum, item) => sum + (item.scores.average || 0), 0) / stash.length);
-        avgEl.textContent = totalAvg;
-        updatePlantGrowth(totalAvg);
-
-        let html = '';
-
-        if (currentSort === 'recency') {
-            html = stash.slice().reverse().map((item, i) => {
-                const originalIndex = stash.length - 1 - i;
-                return renderItem(item, originalIndex, i * 0.04);
-            }).join('');
-        } else if (currentSort === 'category') {
-            // Group by category
-            const grouped = stash.reduce((acc, item, index) => {
-                const type = item.type || 'Uncategorized';
-                if (!acc[type]) acc[type] = [];
-                acc[type].push({ ...item, originalIndex: index });
-                return acc;
-            }, {});
-
-            // Sort categories alphabetically-ish (Uncategorized last)
-            const categories = Object.keys(grouped).sort((a, b) => {
-                if (a === 'Uncategorized') return 1;
-                if (b === 'Uncategorized') return -1;
-                return a.localeCompare(b);
-            });
-
-            html = categories.map(cat => {
-                const items = grouped[cat];
-                const catAvg = Math.round(items.reduce((sum, item) => sum + (item.scores.average || 0), 0) / items.length);
-                return `
-                    <div class="category-header">${cat} : <span class="category-avg">${catAvg}</span></div>
-                    ${items.map((item, i) => renderItem(item, item.originalIndex, i * 0.04)).join('')}
-                `;
-            }).join('');
-        }
-
-        listEl.innerHTML = html;
-
-        attachDeleteListeners();
-    });
-};
-
-const renderItem = (item, originalIndex, delay) => `
-    <div class="stash-row" style="animation-delay: ${delay}s">
-        <a class="stash-item" href="${item.link}" target="_blank">
-            <div class="score">${item.scores.average}</div>
-            <div class="info">
-                <div class="name">${item.name}</div>
-                <div class="date">${formatDate(item.timestamp)}</div>
-            </div>
-        </a>
-        <button class="delete-btn" data-index="${originalIndex}" aria-label="Delete item">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-        </button>
-    </div>
-`;
-
-const attachDeleteListeners = () => {
-    document.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            deleteItem(parseInt(btn.dataset.index));
-        });
-    });
-};
-
-
-
-document.querySelectorAll('.sort-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        currentSort = btn.dataset.sort;
-        chrome.storage.sync.set({ sortPreference: currentSort });
-
-        document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        renderStash();
-    });
-});
-
-const deleteItem = (index) => {
-    chrome.storage.sync.get(['stash'], result => {
-        if (!result.stash) return;
-        const stash = JSON.parse(result.stash);
-        stash.splice(index, 1);
-        chrome.storage.sync.set({ stash: JSON.stringify(stash) }, () => {
-            renderStash();
-        });
-    });
-};
-
-
-
-chrome.storage.sync.get(['sortPreference'], result => {
-    if (result.sortPreference) {
-        currentSort = result.sortPreference;
-        document.querySelectorAll('.sort-btn').forEach(b => {
-            b.classList.toggle('active', b.dataset.sort === currentSort);
-        });
-    }
-    renderStash();
-});
-
-document.getElementById('btn-clear').addEventListener('click', () => {
-    chrome.storage.sync.remove('stash', () => {
-        location.reload();
-    });
-});
-
-const btnQuirky = document.getElementById('btn-quirky') || document.getElementById('btn-funky');
-if (btnQuirky) {
-    btnQuirky.addEventListener('click', () => {
-        window.location.href = 'quirkydashboard.html';
-    });
-}
-
-const debugSlider = document.getElementById('debug-score');
-if (debugSlider) {
-    debugSlider.addEventListener('input', (e) => {
-        const score = parseInt(e.target.value);
-        updatePlantGrowth(score, true);
-        document.getElementById('avg-number').textContent = score;
-    });
-}
-
-
-
-const popovers = [
-    { id: 'popover-share', btnId: 'btn-share' },
-    { id: 'popover-support', btnId: 'btn-support' },
-    { id: 'popover-contact', btnId: 'btn-contact' }
-];
-
-let activePopoverId = null;
-
-const closeAllPopovers = () => {
-    popovers.forEach(p => {
-        document.getElementById(p.id).classList.remove('active');
-    });
-    activePopoverId = null;
-};
-
-const updatePopoverPosition = (popover, btn) => {
-    const btnRect = btn.getBoundingClientRect();
-    const popoverRect = popover.getBoundingClientRect();
-
-    // Center horizontally above button
-    let left = btnRect.left + (btnRect.width / 2) - (popoverRect.width / 2);
-
-    // Clamp to screen edges
-    const padding = 10;
-    const maxLeft = window.innerWidth - popoverRect.width - padding;
-    left = Math.max(padding, Math.min(maxLeft, left));
-
-    // Position above button with gap
-    const top = btnRect.top - popoverRect.height - 10;
-
-    popover.style.left = `${left}px`;
-    popover.style.top = `${top}px`;
-
-    // Adjust arrow position to point at button center
-    const arrow = popover.querySelector('.popover-arrow');
-    if (arrow) {
-        const btnCenter = btnRect.left + (btnRect.width / 2);
-        let arrowLeft = btnCenter - left;
-
-        // Clamp arrow so it doesn't detach from corners
-        // Arrow is 12px wide, popover radius is 12px. Safe zone.
-        const safeZone = 16;
-        arrowLeft = Math.max(safeZone, Math.min(popoverRect.width - safeZone, arrowLeft));
-
-        arrow.style.left = `${arrowLeft}px`;
-    }
-};
-
-popovers.forEach(({ id, btnId }) => {
-    const popover = document.getElementById(id);
-    const btn = document.getElementById(btnId);
-
-    if (popover && btn) {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-
-            const isActive = popover.classList.contains('active');
-
-            // Close others first
-            if (activePopoverId && activePopoverId !== id) {
-                document.getElementById(activePopoverId).classList.remove('active');
-            }
-
-            if (isActive) {
-                popover.classList.remove('active');
-                activePopoverId = null;
-            } else {
-                // Determine position before showing (visibility hidden allows measurement)
-                // We temporary set display block if needed, but it's fixed/hidden by opacity/visibility so rect works
-                updatePopoverPosition(popover, btn);
-                popover.classList.add('active');
-                activePopoverId = id;
-            }
-        });
-
-        // Prevent clicks inside popover from closing it
-        popover.addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
-    }
-});
-
-document.addEventListener('click', () => {
-    if (activePopoverId) {
-        closeAllPopovers();
-    }
-});
+    }, 20);
+}, 1000);
 
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        closeAllPopovers();
-    }
-});
-
-window.addEventListener('resize', () => {
-    if (activePopoverId) {
-        // Find active and reposition
-        const activeDef = popovers.find(p => p.id === activePopoverId);
-        if (activeDef) {
-            const popover = document.getElementById(activeDef.id);
-            const btn = document.getElementById(activeDef.btnId);
-            updatePopoverPosition(popover, btn);
-        }
+    if (e.code === 'Space') {
+        e.preventDefault();
+        const isDark = document.body.dataset.theme === 'dark';
+        document.body.dataset.theme = isDark ? 'light' : 'dark';
+        updatePlantGrowth(currentScore, true);
     }
 });

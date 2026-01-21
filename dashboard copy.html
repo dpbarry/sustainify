@@ -48,10 +48,10 @@
             background: var(--bg);
             color: var(--text);
             height: 100vh;
+            width: 100vw;
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 2rem 2rem;
+            margin: 0;
+            padding: 0;
             overflow: hidden;
         }
 
@@ -146,9 +146,9 @@
         .plant-panel {
             flex: 1;
             background: var(--card);
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-            padding: 1rem;
+            border-radius: 0;
+            box-shadow: none;
+            padding: 2rem;
             display: flex;
             align-items: flex-end;
             justify-content: center;
@@ -156,9 +156,9 @@
 
         .plant-container {
             width: 100%;
-            max-width: 220px;
+            max-width: 600px;
             height: 100%;
-            max-height: 400px;
+            max-height: 90vh;
             display: flex;
             align-items: flex-end;
             justify-content: center;
@@ -592,188 +592,16 @@
 </head>
 
 <body data-theme="light">
-    <div class="container">
-        <header>
-            <h1>My Stash</h1>
-            <button class="icon-btn" id="btn-theme" aria-label="Toggle theme">
-                <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    stroke-width="1.5" stroke-linecap="round">
-                    <circle cx="12" cy="12" r="5"></circle>
-                    <line x1="12" y1="1" x2="12" y2="3"></line>
-                    <line x1="12" y1="21" x2="12" y2="23"></line>
-                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                    <line x1="1" y1="12" x2="3" y2="12"></line>
-                    <line x1="21" y1="12" x2="23" y2="12"></line>
-                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                </svg>
-                <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    stroke-width="1.5" stroke-linecap="round" style="display:none">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                </svg>
-            </button>
-        </header>
-
-
-
-        <div class="main-content">
-            <div class="stash-column">
-                <div class="sort-controls">
-                    <span class="sort-label">Sort by:</span>
-                    <button class="sort-btn active" data-sort="recency">Recency</button>
-                    <button class="sort-btn" data-sort="category">Category</button>
-                </div>
-                <div class="stash-list" id="stash-list">
-                    <div class="empty">No items stashed yet</div>
-                </div>
-                <div class="footer-actions">
-                    <button class="footer-action" id="btn-clear">Clear Stash</button>
-                    <button class="footer-action" id="btn-quirky">Quirky Theme</button>
-                    <button class="footer-action" id="btn-share">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            style="vertical-align: -2px; margin-right: 4px;">
-                            <circle cx="18" cy="5" r="3"></circle>
-                            <circle cx="6" cy="12" r="3"></circle>
-                            <circle cx="18" cy="19" r="3"></circle>
-                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                        </svg>
-                        Share
-                    </button>
-                    <button class="footer-action" id="btn-support">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            style="vertical-align: -2px; margin-right: 4px;">
-                            <path
-                                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
-                            </path>
-                        </svg>
-                        Support
-                    </button>
-                    <button class="footer-action" id="btn-contact">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            style="vertical-align: -2px; margin-right: 4px;">
-                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
-                            </path>
-                            <polyline points="22,6 12,13 2,6"></polyline>
-                        </svg>
-                        Contact
-                    </button>
-                    <input type="range" class="debug-slider" id="debug-score" min="0" max="100" value="0"
-                        title="Test score">
-                </div>
-            </div>
-            <div class="plant-column">
-                <div class="avg-score">
-                    <div class="number" id="avg-number">--</div>
-                    <div class="label">Average Score</div>
-                </div>
-                <div class="plant-panel" style="position: relative; overflow: hidden;">
-                    <canvas id="mote-canvas"
-                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity 1s ease; z-index: 0;"></canvas>
-                    <div class="plant-container" id="growth-plant" aria-label="Sustainability growth plant"
-                        style="position: relative; z-index: 10;">
-                        <!-- Plant SVG will be generated by JS -->
-                    </div>
-                </div>
-            </div>
+    <div class="plant-panel" style="position: relative; overflow: hidden; width: 100vw; height: 100vh; border-radius: 0;">
+        <canvas id="mote-canvas"
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity 1s ease; z-index: 0;"></canvas>
+        <div class="plant-container" id="growth-plant" aria-label="Sustainability growth plant"
+            style="position: relative; z-index: 10; transform: translateY(60px);">
+            <!-- Plant SVG will be generated by JS -->
         </div>
     </div>
 
-    <!-- Share Popover -->
-    <div class="popover" id="popover-share">
-        <div class="popover-arrow"></div>
-        <div class="popover-content">
-            <div class="popover-header">Share via</div>
-            <button class="popover-item" id="share-instagram">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-                </svg>
-                <span>Instagram</span>
-            </button>
-            <button class="popover-item" id="share-x">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path
-                        d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                </svg>
-                <span>X / Twitter</span>
-            </button>
-            <button class="popover-item" id="share-copy">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-                <span>Copy Link</span>
-            </button>
-        </div>
-    </div>
-
-    <!-- Support Popover -->
-    <div class="popover" id="popover-support">
-        <div class="popover-arrow"></div>
-        <div class="popover-content">
-            <div class="popover-header">Support Us</div>
-            <button class="popover-item" id="support-donate">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <path
-                        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
-                    </path>
-                </svg>
-                <span>Donate</span>
-            </button>
-            <button class="popover-item" id="support-rate">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <polygon
-                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
-                    </polygon>
-                </svg>
-                <span>Rate Us</span>
-            </button>
-            <button class="popover-item" id="support-feedback">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                </svg>
-                <span>Send Feedback</span>
-            </button>
-        </div>
-    </div>
-
-    <!-- Contact Popover -->
-    <div class="popover" id="popover-contact">
-        <div class="popover-arrow"></div>
-        <div class="popover-content">
-            <div class="popover-header">Get in Touch</div>
-            <button class="popover-item" id="contact-email">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                    <polyline points="22,6 12,13 2,6"></polyline>
-                </svg>
-                <span>Email Us</span>
-            </button>
-            <button class="popover-item" id="contact-phone">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <path
-                        d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
-                    </path>
-                </svg>
-                <span>Call Phone</span>
-            </button>
-        </div>
-    </div>
-
-    <script src="dashboard.js"></script>
+    <script src="dashboard copy.js"></script>
 </body>
 
 </html>
